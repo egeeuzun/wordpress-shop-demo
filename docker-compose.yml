@@ -1,0 +1,49 @@
+# Lokal geliştirme ortamı — AWS'deki mimarinin küçültülmüş hali:
+#   wordpress  -> ECS Fargate task'ı
+#   db         -> RDS MySQL
+#   memcached  -> ElastiCache
+# Başlatma: docker compose up -d --build
+# Demo içerik: ./scripts/seed-demo.sh
+services:
+  wordpress:
+    build: .
+    ports:
+      - "8080:80"
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME:-wordpress}
+      WORDPRESS_DB_USER: ${WORDPRESS_DB_USER:-wordpress}
+      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD:-wordpress}
+      MEMCACHED_HOST: memcached
+      WP_HOME: http://localhost:8080
+    volumes:
+      # Tema geliştirmesi için canlı mount (imajı yeniden build etmeden)
+      - ./wp-content/themes/shopdemo:/var/www/html/wp-content/themes/shopdemo
+      - uploads:/var/www/html/wp-content/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+      memcached:
+        condition: service_started
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: ${WORDPRESS_DB_NAME:-wordpress}
+      MYSQL_USER: ${WORDPRESS_DB_USER:-wordpress}
+      MYSQL_PASSWORD: ${WORDPRESS_DB_PASSWORD:-wordpress}
+      MYSQL_RANDOM_ROOT_PASSWORD: "1"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "$${MYSQL_USER}", "-p$${MYSQL_PASSWORD}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  memcached:
+    image: memcached:1.6-alpine
+
+volumes:
+  db_data:
+  uploads:

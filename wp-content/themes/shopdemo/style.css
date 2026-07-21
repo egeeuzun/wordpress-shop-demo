@@ -1,0 +1,44 @@
+/*
+Theme Name: Shop Demo
+Theme URI: https://example.com/
+Description: Storefront tabanlı mağaza demo child teması. Özelleştirmelerinizi bu temada yapın; parent tema (Storefront) imaj build sırasında indirilir.
+Author: Ege Uzun
+Template: storefront
+Version: 1.0.0
+Text Domain: shopdemo
+*/
+
+:root {
+    --shopdemo-primary: #1f6f54;
+    --shopdemo-accent: #e8a33d;
+}
+
+.site-header,
+.storefront-handheld-footer-bar {
+    background-color: var(--shopdemo-primary);
+}
+
+.site-header a,
+.site-header .site-title a,
+.main-navigation ul li a {
+    color: #ffffff;
+}
+
+button.button,
+.button.alt,
+.woocommerce-message a.button,
+input[type="submit"] {
+    background-color: var(--shopdemo-accent);
+    color: #1c1c1c;
+}
+
+.onsale {
+    background-color: var(--shopdemo-accent);
+    border-color: var(--shopdemo-accent);
+    color: #1c1c1c;
+}
+
+.site-footer {
+    background-color: #16241f;
+    color: #cfd8d3;
+}

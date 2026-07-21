@@ -1,0 +1,7 @@
+.env
+imagedefinitions.json
+*.log
+.DS_Store
+*.png
+*.jpg
+*.jpeg

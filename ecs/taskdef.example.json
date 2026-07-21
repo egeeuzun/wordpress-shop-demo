@@ -1,0 +1,64 @@
+{
+  "family": "wordpress-shop-demo",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::<ACCOUNT_ID>:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::<ACCOUNT_ID>:role/wordpressTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "wordpress",
+      "image": "<ACCOUNT_ID>.dkr.ecr.eu-west-1.amazonaws.com/wordpress-shop-demo:latest",
+      "essential": true,
+      "portMappings": [{ "containerPort": 80, "protocol": "tcp" }],
+      "environment": [
+        { "name": "WORDPRESS_DB_HOST", "value": "<RDS_WRITER_ENDPOINT>:3306" },
+        { "name": "WORDPRESS_DB_NAME", "value": "wordpress" },
+        { "name": "WORDPRESS_DB_USER", "value": "wordpress" },
+        { "name": "MEMCACHED_HOST", "value": "<ELASTICACHE_CONFIG_ENDPOINT>" },
+        { "name": "WP_HOME", "value": "https://www.ornek-magaza.com" },
+        { "name": "WP_CDN_URL", "value": "https://cdn.ornek-magaza.com" },
+        { "name": "WORDPRESS_DISALLOW_FILE_MODS", "value": "1" }
+      ],
+      "secrets": [
+        { "name": "WORDPRESS_DB_PASSWORD", "valueFrom": "arn:aws:secretsmanager:eu-west-1:<ACCOUNT_ID>:secret:wordpress/db-password" },
+        { "name": "WORDPRESS_AUTH_KEY", "valueFrom": "arn:aws:secretsmanager:eu-west-1:<ACCOUNT_ID>:secret:wordpress/salts:AUTH_KEY::" },
+        { "name": "WORDPRESS_SECURE_AUTH_KEY", "valueFrom": "arn:aws:secretsmanager:eu-west-1:<ACCOUNT_ID>:secret:wordpress/salts:SECURE_AUTH_KEY::" },
+        { "name": "WORDPRESS_LOGGED_IN_KEY", "valueFrom": "arn:aws:secretsmanager:eu-west-1:<ACCOUNT_ID>:secret:wordpress/salts:LOGGED_IN_KEY::" },
+        { "name": "WORDPRESS_NONCE_KEY", "valueFrom": "arn:aws:secretsmanager:eu-west-1:<ACCOUNT_ID>:secret:wordpress/salts:NONCE_KEY::" },
+        { "name": "WORDPRESS_AUTH_SALT", "valueFrom": "arn:aws:secretsmanager:eu-west-1:<ACCOUNT_ID>:secret:wordpress/salts:AUTH_SALT::" },
+        { "name": "WORDPRESS_SECURE_AUTH_SALT", "valueFrom": "arn:aws:secretsmanager:eu-west-1:<ACCOUNT_ID>:secret:wordpress/salts:SECURE_AUTH_SALT::" },
+        { "name": "WORDPRESS_LOGGED_IN_SALT", "valueFrom": "arn:aws:secretsmanager:eu-west-1:<ACCOUNT_ID>:secret:wordpress/salts:LOGGED_IN_SALT::" },
+        { "name": "WORDPRESS_NONCE_SALT", "valueFrom": "arn:aws:secretsmanager:eu-west-1:<ACCOUNT_ID>:secret:wordpress/salts:NONCE_SALT::" }
+      ],
+      "mountPoints": [
+        {
+          "sourceVolume": "uploads",
+          "containerPath": "/var/www/html/wp-content/uploads"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/wordpress-shop-demo",
+          "awslogs-region": "eu-west-1",
+          "awslogs-stream-prefix": "wordpress"
+        }
+      }
+    }
+  ],
+  "volumes": [
+    {
+      "name": "uploads",
+      "efsVolumeConfiguration": {
+        "fileSystemId": "<EFS_FILESYSTEM_ID>",
+        "transitEncryption": "ENABLED",
+        "authorizationConfig": {
+          "accessPointId": "<EFS_ACCESS_POINT_ID>",
+          "iam": "ENABLED"
+        }
+      }
+    }
+  ]
+}

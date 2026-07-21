@@ -1,0 +1,10 @@
+.git
+.env
+.env.example
+docker-compose.yml
+buildspec.yml
+ecs/
+scripts/
+README.md
+*.jpg
+*.png
