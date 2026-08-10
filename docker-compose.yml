@@ -16,6 +16,8 @@ services:
       WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD:-wordpress}
       MEMCACHED_HOST: memcached
       WP_HOME: http://localhost:8080
+      # Lokal MySQL'de TLS zorunlu değil; RDS'te (require_secure_transport=1) açıktır
+      WORDPRESS_DB_SSL: "0"
     volumes:
       # Tema geliştirmesi için canlı mount (imajı yeniden build etmeden)
       - ./wp-content/themes/shopdemo:/var/www/html/wp-content/themes/shopdemo
