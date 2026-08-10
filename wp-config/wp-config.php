@@ -8,7 +8,16 @@
 // ---------------------------------------------------------------------------
 // ALB / CloudFront arkasında HTTPS ve host algılama
 // ---------------------------------------------------------------------------
-if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+// CloudFront origin'e HTTP ile bağlandığında (ALB'de sertifika yoksa) ALB
+// "X-Forwarded-Proto: http" yazar — viewer HTTPS kullansa bile. Bu yüzden
+// CloudFront'un kendi başlığına da bakıyoruz.
+// Not: En sağlam çözüm WP_HOME'u https:// olarak vermektir (aşağıya bakın).
+$shop_forwarded_proto = strtolower(
+    $_SERVER['HTTP_CLOUDFRONT_FORWARDED_PROTO']
+        ?? $_SERVER['HTTP_X_FORWARDED_PROTO']
+        ?? ''
+);
+if ($shop_forwarded_proto === 'https') {
     $_SERVER['HTTPS'] = 'on';
 }
 if (isset($_SERVER['HTTP_X_FORWARDED_HOST'])) {
@@ -31,6 +40,19 @@ define('DB_PASSWORD', shop_env('WORDPRESS_DB_PASSWORD'));
 define('DB_HOST',     shop_env('WORDPRESS_DB_HOST', 'db:3306'));
 define('DB_CHARSET',  'utf8mb4');
 define('DB_COLLATE',  '');
+
+// RDS MariaDB 11.8'in varsayılan parametre grubu require_secure_transport=1 ile
+// gelir; sunucu TLS kullanmayan bağlantıları reddeder ve WordPress "Error
+// establishing a database connection" verir. mysqli'yi TLS'e zorluyoruz.
+//
+// Sunucu sertifikası doğrulanmıyor: imajda RDS CA bundle'ı yok. Trafik yine de
+// şifreli. Tam doğrulama için CA bundle'ını imaja ekleyip MYSQLI_CLIENT_SSL'i
+// tek başına kullanın.
+//
+// Yerel geliştirmede kapatmak için: WORDPRESS_DB_SSL=0
+if (shop_env('WORDPRESS_DB_SSL', '1') === '1') {
+    define('MYSQL_CLIENT_FLAGS', MYSQLI_CLIENT_SSL | MYSQLI_CLIENT_SSL_DONT_VERIFY_SERVER_CERT);
+}
 
 $table_prefix = shop_env('WORDPRESS_TABLE_PREFIX', 'wp_');
 
