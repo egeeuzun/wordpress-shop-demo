@@ -1,6 +1,6 @@
 # WordPress mağaza demo imajı — ECS Fargate üzerinde çalışacak şekilde tasarlandı.
 # Kod imaja gömülür (immutable), kalıcı veriler (uploads) EFS'e mount edilir.
-FROM wordpress:6.8-php8.3-apache
+FROM wordpress:7.0-php8.3-apache
 
 # ElastiCache (Memcached) için PHP memcached eklentisi + yardımcı araçlar
 RUN apt-get update && apt-get install -y --no-install-recommends \
