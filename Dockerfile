@@ -2,7 +2,10 @@
 # Kod imaja gömülür (immutable), kalıcı veriler (uploads) EFS'e mount edilir.
 FROM wordpress:7.0-php8.3-apache
 
-# ElastiCache (Memcached) için PHP memcached eklentisi + yardımcı araçlar
+# ElastiCache (Memcached) için PHP memcached eklentisi + yardımcı araçlar.
+# stunnel: PHP'nin memcached eklentisinin TLS desteği yok; ElastiCache'te
+# in-transit encryption / Serverless kullanılacaksa (MEMCACHED_TLS=1) entrypoint
+# bağlantıyı stunnel üzerinden tünelliyor.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libmemcached-dev \
         zlib1g-dev \
@@ -10,6 +13,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         unzip \
         less \
         default-mysql-client \
+        stunnel4 \
+        ca-certificates \
     && pecl install memcached \
     && docker-php-ext-enable memcached \
     && rm -rf /var/lib/apt/lists/*
@@ -24,12 +29,20 @@ RUN curl -fsSL -o /usr/local/bin/wp \
         https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
     && chmod +x /usr/local/bin/wp
 
+# Object cache drop-in'ine ElastiCache ayarlarını enjekte eden yama (aşağıda kullanılıyor)
+COPY docker/patch-object-cache.sh /usr/local/bin/patch-object-cache.sh
+RUN chmod +x /usr/local/bin/patch-object-cache.sh
+
 # Mağaza için eklenti ve temalar: WooCommerce, Storefront,
+# WP Offload Media Lite (S3 + CloudFront medya offload),
 # Memcached object cache drop-in (Memcached Redux)
 RUN set -eux; \
     curl -fsSL -o /tmp/woocommerce.zip \
         https://downloads.wordpress.org/plugin/woocommerce.latest-stable.zip; \
     unzip -q /tmp/woocommerce.zip -d /usr/src/wordpress/wp-content/plugins/; \
+    curl -fsSL -o /tmp/offload-media.zip \
+        https://downloads.wordpress.org/plugin/amazon-s3-and-cloudfront.latest-stable.zip; \
+    unzip -q /tmp/offload-media.zip -d /usr/src/wordpress/wp-content/plugins/; \
     curl -fsSL -o /tmp/storefront.zip \
         https://downloads.wordpress.org/theme/storefront.latest-stable.zip; \
     unzip -q /tmp/storefront.zip -d /usr/src/wordpress/wp-content/themes/; \
@@ -38,6 +51,7 @@ RUN set -eux; \
     unzip -q /tmp/memcached-redux.zip -d /tmp/; \
     mkdir -p /usr/src/extras; \
     cp /tmp/memcached-redux/object-cache.php /usr/src/extras/object-cache.php; \
+    patch-object-cache.sh /usr/src/extras/object-cache.php; \
     rm -rf /tmp/*.zip /tmp/memcached-redux
 
 # Özel tema, mu-plugin'ler ve ortam değişkeni tabanlı wp-config
@@ -47,7 +61,12 @@ COPY docker/health.php /usr/src/wordpress/health.php
 COPY docker/php-overrides.ini /usr/local/etc/php/conf.d/zz-overrides.ini
 
 COPY docker/entrypoint.sh /usr/local/bin/shop-entrypoint.sh
+# wp-admin üzerinden eklenti/tema kurulumu için WordPress'in yazabilmesi gereken
+# dizinler (upgrade = indirilen paketlerin açıldığı geçici dizin).
 RUN chmod +x /usr/local/bin/shop-entrypoint.sh \
+    && mkdir -p /usr/src/wordpress/wp-content/upgrade \
+                /usr/src/wordpress/wp-content/uploads \
+                /usr/src/wordpress/wp-content/languages \
     && chown -R www-data:www-data /usr/src/wordpress
 
 ENTRYPOINT ["shop-entrypoint.sh"]
