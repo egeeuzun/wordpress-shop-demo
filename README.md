@@ -5,20 +5,22 @@ WooCommerce-based WordPress shop template designed for automated deployment to a
 ## Architecture
 
 ```text
-User → Route53 → WAF → CloudFront → ALB → ECS Fargate (2 AZ)
-                                          ├── RDS MySQL (Primary + Read Replica)
-                                          ├── ElastiCache Memcached
-                                          └── EFS (uploads)
+User → Route53 → WAF → CloudFront ─┬─ /wp-content/uploads/* → S3 (media, OAC)
+                                   └─ /*  → ALB → ECS Fargate (2 AZ)
+                                                  ├── RDS MySQL (Primary + Read Replica)
+                                                  ├── ElastiCache Memcached
+                                                  └── EFS (uploads, plugins, themes)
 
 CI/CD: GitHub → CodeBuild → CodePipeline → ECR → ECS
 ```
 
 ## Key Principles
 
-- **Immutable Code:** Core, plugins, and custom theme (`shopdemo`) are baked into the Docker image. Updates are applied strictly via CI/CD.
-- **Shared Storage:** Only `wp-content/uploads` is mounted on EFS across Availability Zones.
+- **Baked Baseline, Extensible at Runtime:** Core, WooCommerce, WP Offload Media Lite, Storefront and the custom theme (`shopdemo`) are baked into the Docker image. Installing extra plugins/themes from the WordPress.org store in `wp-admin` is enabled (`DISALLOW_FILE_MODS=0`) — those land on EFS so every task sees them.
+- **Media on S3:** Uploads are offloaded to S3 by WP Offload Media Lite and served through CloudFront, so static objects never touch PHP or EFS.
+- **Shared Storage:** `wp-content/uploads`, `plugins` and `themes` are mounted on EFS across Availability Zones.
 - **Environment Config:** Managed via environment variables and AWS Secrets Manager.
-- **Caching:** Automatically loads Memcached (`object-cache.php`) if `MEMCACHED_HOST` is set.
+- **Caching:** Automatically loads the Memcached object cache drop-in if `MEMCACHED_HOST` is set — multi-node, consistent hashing, optional TLS.
 
 ## Project Structure
 
@@ -26,13 +28,16 @@ CI/CD: GitHub → CodeBuild → CodePipeline → ECR → ECS
 ├── Dockerfile               # Fargate container image
 ├── buildspec.yml            # CodeBuild specification
 ├── docker-compose.yml       # Local development setup
-├── docker/                  # Entrypoint, PHP settings, health check
+├── docker/                  # Entrypoint, PHP settings, health check, drop-in patch
 ├── wp-config/wp-config.php  # Env-based WordPress config
 ├── wp-content/
 │   ├── themes/shopdemo/     # Custom Storefront child theme
-│   └── mu-plugins/          # CDN redirect, XML-RPC disable
+│   └── mu-plugins/          # S3 plugin auto-activation, CDN redirect, XML-RPC disable
 ├── scripts/seed-demo.sh     # Demo content seeder
-└── ecs/taskdef.example.json # ECS Task Definition template
+└── ecs/
+    ├── taskdef.example.json      # ECS Task Definition template
+    ├── s3-media-policy.example.json  # Task role policy for the media bucket
+    └── cloudfront-media-oac.md      # S3 bucket + CloudFront (OAC) setup guide
 ```
 
 ## Local Development
@@ -54,13 +59,149 @@ docker compose up -d --build
 4. **Task Definition:** Fill in placeholders in `ecs/taskdef.example.json`. Keep container name as `wordpress`.
 5. **CodePipeline:** Pipeline flow: GitHub → CodeBuild → ECS (using `imagedefinitions.json`).
 6. **ALB Health Check:** Set target group path to `/health.php`.
-7. **Environment Variables:** Set `WP_HOME` (CloudFront URL) and `WP_CDN_URL`.
+7. **Environment Variables:** Set `WP_HOME` (CloudFront URL), `WP_CDN_URL` and `WP_S3_BUCKET`.
+8. **Media Bucket:** Follow `ecs/cloudfront-media-oac.md` and attach the task role policy.
 
 *Every `git push` will automatically trigger a deployment to ECS Fargate.*
 
+## Media Offload to S3
+
+Uploads are pushed to S3 and served from CloudFront instead of EFS/PHP — cheaper
+storage, no per-request EFS throughput, and identical URLs across all tasks.
+
+1. Create the bucket and CloudFront behavior: see `ecs/cloudfront-media-oac.md`.
+2. Attach `ecs/s3-media-policy.example.json` to the ECS **task role** — no access
+   keys are stored anywhere; the plugin authenticates with `use-server-roles`.
+3. Set these in the task definition:
+
+   | Variable | Meaning |
+   | --- | --- |
+   | `WP_S3_BUCKET` | Media bucket name. **Empty = offload disabled** (plugin stays inactive). |
+   | `WP_S3_REGION` | Bucket region (default `eu-west-1`). |
+   | `WP_S3_DELIVERY_DOMAIN` | Domain that serves the media. Falls back to `WP_CDN_URL`. |
+   | `WP_S3_OBJECT_PREFIX` | Key prefix (default `wp-content/uploads/`). |
+   | `WP_S3_REMOVE_LOCAL` | `1` (default) deletes the local copy after a successful offload. |
+
+The plugin is configured entirely through `AS3CF_SETTINGS` in `wp-config.php`, so
+the settings screen is read-only and no DB state has to be seeded. The mu-plugin
+force-activates it via the `option_active_plugins` filter when `WP_S3_BUCKET` is
+set, which keeps every task identical without an activation step.
+
+**Lite limits:** only *new* uploads are offloaded; bulk-migrating an existing
+library is a Pro feature (workaround in `ecs/cloudfront-media-oac.md`).
+
+When offload is on, the mu-plugin's `upload_dir` CDN rewrite is skipped — the
+plugin already rewrites URLs, and both together would double-rewrite the path.
+
+## Installing Plugins & Themes from wp-admin
+
+Enabled by default: `FS_METHOD=direct` plus `www-data`-owned content directories,
+so *Plugins → Add New* works without FTP credentials.
+
+- `wp-content/plugins` and `wp-content/themes` are EFS mounts in
+  `ecs/taskdef.example.json`. Without them an install would only exist in the one
+  container that performed it and would vanish on the next deployment.
+- The entrypoint enables `opcache.validate_timestamps` whenever file mods are
+  allowed, so newly installed/updated PHP files take effect without a restart.
+- Tasks need outbound HTTPS (NAT gateway or equivalent) to reach
+  `api.wordpress.org` and `downloads.wordpress.org`.
+- The file editor stays disabled (`DISALLOW_FILE_EDIT`) — installs, yes; editing
+  PHP in the browser, no.
+- On an image update, a plugin already present on EFS is **not** overwritten by
+  the image copy. Update baked plugins by bumping them in the `Dockerfile` and
+  removing the EFS copy, or update them from wp-admin.
+- To lock everything down again: `WORDPRESS_DISALLOW_FILE_MODS=1`.
+
+## Object Cache (ElastiCache Memcached)
+
+The image ships the PECL `memcached` extension plus the Memcached Redux drop-in.
+The drop-in is only installed (as `wp-content/object-cache.php`) when
+`MEMCACHED_HOST` is set, so local runs without it are unaffected.
+
+| Variable | Meaning |
+| --- | --- |
+| `MEMCACHED_HOST` | One node, or several separated by commas. Empty = object cache off. |
+| `MEMCACHED_PORT` | Port for nodes listed without one (default `11211`). |
+| `MEMCACHED_TLS` | `1` routes every node through a local stunnel TLS tunnel. |
+| `MEMCACHED_TLS_VERIFY` | `0` disables certificate chain/hostname verification (debug only). |
+| `WP_CACHE_SALT` | Cache key prefix. Defaults to the `WP_HOME` host. |
+
+### List the nodes, not the configuration endpoint
+
+The PECL `memcached` extension does **not** implement ElastiCache
+auto-discovery — it treats the configuration endpoint as one ordinary node. On a
+single-node cluster that is harmless; on a multi-node cluster all traffic would
+pile onto one node. So list the node endpoints:
+
+```
+MEMCACHED_HOST=n1.abc.0001.euw1.cache.amazonaws.com:11211,n2.abc.0001.euw1.cache.amazonaws.com:11211
+```
+
+`docker/patch-object-cache.sh` injects the client options the drop-in never sets
+(it stopped being maintained in 2020), at image build time:
+
+- **Ketama / consistent hashing** — without it, `modula` distribution remaps
+  nearly every key when a node joins or leaves, emptying the cache and dumping
+  the load onto RDS.
+- **`REMOVE_FAILED_SERVERS` + connect/send/receive timeouts (500 ms)** — an
+  unreachable node degrades into a cache miss instead of stalling requests.
+
+The patch anchors on a specific line of upstream code and **fails the build** if
+it no longer matches, rather than silently producing an unpatched image.
+
+### TLS (in-transit encryption / Serverless)
+
+`php-memcached` has no TLS support at all — there is no `OPT_USE_TLS` in the
+extension. Since ElastiCache Serverless *requires* TLS, the image tunnels
+through stunnel instead:
+
+```
+PHP → 127.0.0.1:11211 → stunnel → TLS → node-1:11211
+PHP → 127.0.0.1:11212 → stunnel → TLS → node-2:11211
+```
+
+Set `MEMCACHED_TLS=1` and the entrypoint generates the stunnel config from
+`MEMCACHED_HOST`, verifying the chain against the system trust store and pinning
+the hostname with `checkHost`/`sni`. The local port mapping (node *i* →
+`11211+i`) is computed identically in `wp-config.php`, so WP-CLI and any other
+process in the container use the same tunnels. A watchdog restarts stunnel if it
+dies; `delay = yes` re-resolves DNS per connection so node failover is picked up.
+
+### Cache key salt
+
+`WP_CACHE_SALT` prefixes every key. Set it per environment when prod and staging
+share a cluster — otherwise they read each other's cache. Setting it to the image
+tag also invalidates everything on deploy, at the cost of a cold cache each time.
+Keep it short: memcached keys are capped at 250 bytes.
+
+### Verifying
+
+```bash
+php -i | grep -A2 '^memcached'                        # extension loaded?
+wp cache type                                         # should print Memcached
+wp eval 'wp_cache_set("t",42); var_dump(wp_cache_get("t"));'
+echo -e 'stats\r' | nc $NODE 11211 | grep -E 'get_hits|evictions'
+```
+
+If `get_hits` stays at zero the client cannot reach the cluster (security group,
+or TLS required but `MEMCACHED_TLS` unset) — the site keeps working, silently
+uncached.
+
+### Known gaps
+
+- The drop-in implements `wp_cache_get_multi()`, not core's
+  `wp_cache_get_multiple()`; core's compat shim loops instead of issuing a real
+  multi-get.
+- No persistent connections — each PHP request opens a new TCP connection.
+- `wp_cache_flush()` flushes the entire cluster, for every task and every site
+  sharing it.
+
 ## Production Notes
 
-- Set `WORDPRESS_DISALLOW_FILE_MODS=1` in production to prevent in-app file edits.
+- Plugin/theme installs are enabled by default; set `WORDPRESS_DISALLOW_FILE_MODS=1`
+  to freeze the file system if you want a strictly immutable deployment.
+- Background auto-updates are off; set `WORDPRESS_AUTOMATIC_UPDATES=1` to enable them.
 - Upgrade WordPress/WooCommerce by updating base image tags in `Dockerfile`.
 - Execute initial WP setup via ECS Exec using the pre-installed WP-CLI (`wp core install`).
 - Using RDS Read Replicas requires HyperDB or LudicrousDB plugins (default config uses Writer endpoint only).
+- ECS tasks need outbound HTTPS for the plugin store, and reachability to S3/ElastiCache.

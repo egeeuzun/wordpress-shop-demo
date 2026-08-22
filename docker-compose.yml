@@ -14,14 +14,35 @@ services:
       WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME:-wordpress}
       WORDPRESS_DB_USER: ${WORDPRESS_DB_USER:-wordpress}
       WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD:-wordpress}
+      # Birden fazla node virgülle verilebilir:
+      #   MEMCACHED_HOST: n1.cache.amazonaws.com:11211,n2.cache.amazonaws.com:11211
       MEMCACHED_HOST: memcached
+      # ElastiCache in-transit encryption / Serverless için "1" — entrypoint
+      # stunnel tüneli açar. Lokal memcached düz TCP olduğu için 0.
+      MEMCACHED_TLS: "0"
+      # Cache anahtarı öneki (ortamlar aynı cluster'ı paylaşırsa çakışmasın)
+      WP_CACHE_SALT: local
       WP_HOME: http://localhost:8080
       # Lokal MySQL'de TLS zorunlu değil; RDS'te (require_secure_transport=1) açıktır
       WORDPRESS_DB_SSL: "0"
+      # Eklenti/tema mağazasından kurulum açık (üretimde kapatmak için "1")
+      WORDPRESS_DISALLOW_FILE_MODS: "0"
+      # S3 medya offload'u lokalde denemek için gerçek bir bucket + anahtar verin.
+      # WP_S3_BUCKET tanımlı değilse eklenti pasif kalır.
+      WP_S3_BUCKET: ${WP_S3_BUCKET:-}
+      WP_S3_REGION: ${WP_S3_REGION:-eu-west-1}
+      WP_S3_DELIVERY_DOMAIN: ${WP_S3_DELIVERY_DOMAIN:-}
+      WP_S3_REMOVE_LOCAL: ${WP_S3_REMOVE_LOCAL:-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
     volumes:
       # Tema geliştirmesi için canlı mount (imajı yeniden build etmeden)
       - ./wp-content/themes/shopdemo:/var/www/html/wp-content/themes/shopdemo
       - uploads:/var/www/html/wp-content/uploads
+      # Panelden kurulan eklentiler konteyner yeniden yaratılınca kaybolur.
+      # Kalıcı olmasını isterseniz açın — ancak volume'daki eski sürümler
+      # imajdaki güncel sürümü gölgeler (imaj güncellemesinde volume'u silin).
+      # - plugins:/var/www/html/wp-content/plugins
     depends_on:
       db:
         condition: service_healthy
@@ -49,3 +70,4 @@ services:
 volumes:
   db_data:
   uploads:
+  # plugins:

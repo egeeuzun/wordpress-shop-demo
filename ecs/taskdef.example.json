@@ -16,10 +16,19 @@
         { "name": "WORDPRESS_DB_HOST", "value": "<RDS_WRITER_ENDPOINT>:3306" },
         { "name": "WORDPRESS_DB_NAME", "value": "wordpress" },
         { "name": "WORDPRESS_DB_USER", "value": "wordpress" },
-        { "name": "MEMCACHED_HOST", "value": "<ELASTICACHE_CONFIG_ENDPOINT>" },
+        { "name": "MEMCACHED_HOST", "value": "<ELASTICACHE_NODE_1>:11211,<ELASTICACHE_NODE_2>:11211" },
+        { "name": "MEMCACHED_TLS", "value": "0" },
+        { "name": "WP_CACHE_SALT", "value": "prod" },
         { "name": "WP_HOME", "value": "https://www.ornek-magaza.com" },
         { "name": "WP_CDN_URL", "value": "https://cdn.ornek-magaza.com" },
-        { "name": "WORDPRESS_DISALLOW_FILE_MODS", "value": "1" }
+
+        { "name": "WP_S3_BUCKET", "value": "<MEDIA_BUCKET_NAME>" },
+        { "name": "WP_S3_REGION", "value": "eu-west-1" },
+        { "name": "WP_S3_DELIVERY_DOMAIN", "value": "https://cdn.ornek-magaza.com" },
+        { "name": "WP_S3_OBJECT_PREFIX", "value": "wp-content/uploads/" },
+        { "name": "WP_S3_REMOVE_LOCAL", "value": "1" },
+
+        { "name": "WORDPRESS_DISALLOW_FILE_MODS", "value": "0" }
       ],
       "secrets": [
         { "name": "WORDPRESS_DB_PASSWORD", "valueFrom": "arn:aws:secretsmanager:eu-west-1:<ACCOUNT_ID>:secret:wordpress/db-password" },
@@ -36,6 +45,14 @@
         {
           "sourceVolume": "uploads",
           "containerPath": "/var/www/html/wp-content/uploads"
+        },
+        {
+          "sourceVolume": "plugins",
+          "containerPath": "/var/www/html/wp-content/plugins"
+        },
+        {
+          "sourceVolume": "themes",
+          "containerPath": "/var/www/html/wp-content/themes"
         }
       ],
       "logConfiguration": {
@@ -55,7 +72,29 @@
         "fileSystemId": "<EFS_FILESYSTEM_ID>",
         "transitEncryption": "ENABLED",
         "authorizationConfig": {
-          "accessPointId": "<EFS_ACCESS_POINT_ID>",
+          "accessPointId": "<EFS_UPLOADS_ACCESS_POINT_ID>",
+          "iam": "ENABLED"
+        }
+      }
+    },
+    {
+      "name": "plugins",
+      "efsVolumeConfiguration": {
+        "fileSystemId": "<EFS_FILESYSTEM_ID>",
+        "transitEncryption": "ENABLED",
+        "authorizationConfig": {
+          "accessPointId": "<EFS_PLUGINS_ACCESS_POINT_ID>",
+          "iam": "ENABLED"
+        }
+      }
+    },
+    {
+      "name": "themes",
+      "efsVolumeConfiguration": {
+        "fileSystemId": "<EFS_FILESYSTEM_ID>",
+        "transitEncryption": "ENABLED",
+        "authorizationConfig": {
+          "accessPointId": "<EFS_THEMES_ACCESS_POINT_ID>",
           "iam": "ENABLED"
         }
       }
