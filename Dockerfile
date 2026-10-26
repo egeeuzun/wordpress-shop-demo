@@ -60,6 +60,11 @@ COPY wp-config/wp-config.php /usr/src/wordpress/wp-config.php
 COPY docker/health.php /usr/src/wordpress/health.php
 COPY docker/php-overrides.ini /usr/local/etc/php/conf.d/zz-overrides.ini
 
+# Demo mağaza seed kiti (Faz 2): katalog + WP-CLI seed betiği. Webroot dışında;
+# lokalde scripts/seed-demo.sh, AWS'de ECS Exec ile çalıştırılır:
+#   wp eval-file /usr/src/shop-seed/seed.php
+COPY seed/ /usr/src/shop-seed/
+
 COPY docker/entrypoint.sh /usr/local/bin/shop-entrypoint.sh
 # wp-admin üzerinden eklenti/tema kurulumu için WordPress'in yazabilmesi gereken
 # dizinler (upgrade = indirilen paketlerin açıldığı geçici dizin).

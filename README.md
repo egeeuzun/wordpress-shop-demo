@@ -2,6 +2,10 @@
 
 WooCommerce-based WordPress shop template designed for automated deployment to an AWS High Availability (HA) architecture.
 
+The demo store is **Yerel Market**, a generic grocery shop filled with fully
+synthetic data (see [Demo Data](#demo-data-yerel-market)). It is the workload for
+the Frankfurt → Istanbul Local Zone data-residency project.
+
 ## Architecture
 
 ```text
@@ -32,8 +36,11 @@ CI/CD: GitHub → CodeBuild → CodePipeline → ECR → ECS
 ├── wp-config/wp-config.php  # Env-based WordPress config
 ├── wp-content/
 │   ├── themes/shopdemo/     # Custom Storefront child theme
-│   └── mu-plugins/          # S3 plugin auto-activation, CDN redirect, XML-RPC disable
-├── scripts/seed-demo.sh     # Demo content seeder
+│   └── mu-plugins/          # S3 auto-activation, CDN redirect, XML-RPC off, store rules (offline payments, TCKN)
+├── seed/                    # Demo data kit baked into the image (/usr/src/shop-seed)
+│   ├── products.csv         # 86 grocery products (WooCommerce CSV importer format)
+│   └── seed.php             # WP-CLI seeder: store setup, catalog, synthetic customers & orders
+├── scripts/seed-demo.sh     # Local setup: core install + language packs + seed.php
 └── ecs/
     ├── taskdef.example.json      # ECS Task Definition template
     ├── s3-media-policy.example.json  # Task role policy for the media bucket
@@ -50,6 +57,38 @@ docker compose up -d --build
 
 - **Storefront:** http://localhost:8080
 - **Admin Panel:** http://localhost:8080/wp-admin (`admin` / `admin123`)
+- **Demo customer:** `demo.musteri@example.com` / `demo123`
+
+## Demo Data (Yerel Market)
+
+`seed/` is copied into the image, so the same seeder runs locally and on ECS
+(via ECS Exec) with WP-CLI — no REST API keys, no outbound requests.
+
+```bash
+./scripts/seed-demo.sh                          # local: 150 customers, 300 orders
+./scripts/seed-demo.sh orders=500 customers=200
+./scripts/seed-demo.sh dry-run > plan.json      # print the plan, write nothing
+
+# ECS (WordPress installed, WooCommerce active)
+aws ecs execute-command --cluster <CLUSTER> --task <TASK_ID> --container wordpress \
+  --interactive --command "su -s /bin/sh www-data -c 'wp eval-file /usr/src/shop-seed/seed.php'"
+```
+
+- **Catalog:** 86 products in 9 grocery categories, SKUs `LZ-0001`…, stock, weight,
+  unit (`_lz_unit`, shown on product cards), a few discounts, flat-colour
+  placeholder images. Generic names only — no real brands or product photos.
+- **Customers & orders:** synthetic Turkish names, Istanbul district addresses,
+  `+90 5xx` phones, `@example.com` e-mails, and a **synthetic** checksum-valid TCKN
+  stored as `_billing_tckn` on orders. Orders span the last 90 days
+  (completed / processing / on-hold / cancelled).
+- **Store rules** (`wp-content/mu-plugins/shop-demo-store.php`): only *Cash on
+  Delivery* and *Bank Transfer* are ever offered; classic checkout asks for
+  *T.C. Kimlik No* and validates its checksum. "Demo mağazadır, satış yapılmaz"
+  appears in the tagline, store notice and footer.
+- **Idempotent:** products match on SKU, customers on e-mail, orders on
+  `_lz_seed_ref`; re-running never duplicates. Same `seed=` → same data.
+
+Details, arguments and where each piece of personal data lives: `seed/README.md`.
 
 ## AWS CI/CD Setup
 

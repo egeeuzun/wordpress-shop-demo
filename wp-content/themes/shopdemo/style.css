@@ -1,10 +1,10 @@
 /*
 Theme Name: Shop Demo
 Theme URI: https://example.com/
-Description: Storefront tabanlı mağaza demo child teması. Özelleştirmelerinizi bu temada yapın; parent tema (Storefront) imaj build sırasında indirilir.
+Description: Storefront tabanlı "Yerel Market" demo child teması (sentetik veri, satış yapılmaz). Özelleştirmelerinizi bu temada yapın; parent tema (Storefront) imaj build sırasında indirilir.
 Author: Ege Uzun
 Template: storefront
-Version: 1.0.0
+Version: 1.1.0
 Text Domain: shopdemo
 */
 
@@ -41,4 +41,15 @@ input[type="submit"] {
 .site-footer {
     background-color: #16241f;
     color: #cfd8d3;
+}
+
+.shopdemo-unit {
+    display: block;
+    font-size: 0.85em;
+    color: #6b7570;
+    margin: 0.25em 0 0.5em;
+}
+
+.shopdemo-demo-notice {
+    color: var(--shopdemo-accent);
 }
