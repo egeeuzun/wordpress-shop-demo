@@ -1,10 +1,64 @@
-# WordPress Shop Demo — AWS HA CI/CD Template
+# WordPress Shop Demo — Yerel Market
 
-WooCommerce-based WordPress shop template designed for automated deployment to an AWS High Availability (HA) architecture.
+A WooCommerce grocery store, **Yerel Market**, packaged as a Docker image for
+AWS ECS. It is the demo app for a project that moves a high-availability
+WordPress setup from Frankfurt to the AWS Istanbul Local Zone, and then checks
+that customer data really stays in Türkiye.
 
-The demo store is **Yerel Market**, a generic grocery shop filled with fully
-synthetic data (see [Demo Data](#demo-data-yerel-market)). It is the workload for
-the Frankfurt → Istanbul Local Zone data-residency project.
+Everything in the store is fake. There are no real customers, no real brands
+and no real payments. Nothing is sold.
+
+## What's in the store
+
+- **86 products** in 9 grocery categories (fruit & vegetables, dairy, meat,
+  pantry, snacks, drinks, cleaning, personal care, baby). Each has a SKU
+  (`LZ-0001`…), price, stock, weight and unit. A few are on sale. Images are
+  plain coloured placeholders.
+- **150 customers and 300 orders** from the last 90 days. Names, Istanbul
+  addresses, `+90 5xx` phone numbers and `@example.com` e-mails are all
+  randomly generated.
+- **A national ID (TCKN) on every order.** Turkish shops often ask for it to
+  issue e-invoices, so it gives the project a realistic piece of sensitive
+  data to track. The numbers are random; they just pass the checksum rule.
+- **Offline payments only:** Cash on Delivery and Bank Transfer. Other
+  payment methods are never shown, even if enabled in wp-admin.
+- **A demo notice** ("Demo mağazadır, satış yapılmaz" — demo store, nothing is
+  sold) in the site tagline, the top banner and the footer.
+- **A demo customer account** with a few orders:
+  `demo.musteri@example.com` / `demo123`.
+
+## Quick start (local)
+
+```bash
+cp .env.example .env
+docker compose up -d --build
+./scripts/seed-demo.sh
+```
+
+- **Store:** http://localhost:8080
+- **Admin:** http://localhost:8080/wp-admin (`admin` / `admin123`)
+
+`seed-demo.sh` installs WordPress and the Turkish language packs, then fills
+the store. You can run it again: it skips products, customers and orders that
+already exist, so nothing is duplicated.
+
+```bash
+./scripts/seed-demo.sh orders=500 customers=200   # more data
+./scripts/seed-demo.sh dry-run > plan.json        # preview, writes nothing
+```
+
+## Filling the store on AWS
+
+The seed kit is built into the image at `/usr/src/shop-seed/`, so the same
+command works in a running ECS task (WordPress installed, WooCommerce active):
+
+```bash
+aws ecs execute-command --cluster <CLUSTER> --task <TASK_ID> --container wordpress \
+  --interactive --command "su -s /bin/sh www-data -c 'wp eval-file /usr/src/shop-seed/seed.php'"
+```
+
+It needs no API keys and makes no outbound requests. All options, and which
+database tables hold the personal data, are in [`seed/README.md`](seed/README.md).
 
 ## Architecture
 
@@ -46,49 +100,6 @@ CI/CD: GitHub → CodeBuild → CodePipeline → ECR → ECS
     ├── s3-media-policy.example.json  # Task role policy for the media bucket
     └── cloudfront-media-oac.md      # S3 bucket + CloudFront (OAC) setup guide
 ```
-
-## Local Development
-
-```bash
-cp .env.example .env
-docker compose up -d --build
-./scripts/seed-demo.sh
-```
-
-- **Storefront:** http://localhost:8080
-- **Admin Panel:** http://localhost:8080/wp-admin (`admin` / `admin123`)
-- **Demo customer:** `demo.musteri@example.com` / `demo123`
-
-## Demo Data (Yerel Market)
-
-`seed/` is copied into the image, so the same seeder runs locally and on ECS
-(via ECS Exec) with WP-CLI — no REST API keys, no outbound requests.
-
-```bash
-./scripts/seed-demo.sh                          # local: 150 customers, 300 orders
-./scripts/seed-demo.sh orders=500 customers=200
-./scripts/seed-demo.sh dry-run > plan.json      # print the plan, write nothing
-
-# ECS (WordPress installed, WooCommerce active)
-aws ecs execute-command --cluster <CLUSTER> --task <TASK_ID> --container wordpress \
-  --interactive --command "su -s /bin/sh www-data -c 'wp eval-file /usr/src/shop-seed/seed.php'"
-```
-
-- **Catalog:** 86 products in 9 grocery categories, SKUs `LZ-0001`…, stock, weight,
-  unit (`_lz_unit`, shown on product cards), a few discounts, flat-colour
-  placeholder images. Generic names only — no real brands or product photos.
-- **Customers & orders:** synthetic Turkish names, Istanbul district addresses,
-  `+90 5xx` phones, `@example.com` e-mails, and a **synthetic** checksum-valid TCKN
-  stored as `_billing_tckn` on orders. Orders span the last 90 days
-  (completed / processing / on-hold / cancelled).
-- **Store rules** (`wp-content/mu-plugins/shop-demo-store.php`): only *Cash on
-  Delivery* and *Bank Transfer* are ever offered; classic checkout asks for
-  *T.C. Kimlik No* and validates its checksum. "Demo mağazadır, satış yapılmaz"
-  appears in the tagline, store notice and footer.
-- **Idempotent:** products match on SKU, customers on e-mail, orders on
-  `_lz_seed_ref`; re-running never duplicates. Same `seed=` → same data.
-
-Details, arguments and where each piece of personal data lives: `seed/README.md`.
 
 ## AWS CI/CD Setup
 
