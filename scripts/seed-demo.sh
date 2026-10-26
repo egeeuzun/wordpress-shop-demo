@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
-# Lokal ortamda demo mağazayı kurar: WordPress kurulumu, WooCommerce,
-# tema aktivasyonu ve örnek ürünler.
+# Lokal ortamda demo market'i kurar: WordPress kurulumu, Türkçe dil paketi,
+# WooCommerce + tema, ardından seed kiti (seed/seed.php): ~90 ürün, sentetik
+# müşteri ve siparişler.
 # Önce: docker compose up -d --build
+#
+# Ek argümanlar seed.php'ye geçer, örn:
+#   ./scripts/seed-demo.sh orders=500 customers=200
+#   ./scripts/seed-demo.sh dry-run > plan.json   (ilk kurulumdan sonra; DB'ye yazmaz)
 set -euo pipefail
 
 SITE_URL="${SITE_URL:-http://localhost:8080}"
@@ -13,11 +18,19 @@ wp() {
     docker compose exec -T -u www-data wordpress wp "$@"
 }
 
+# dry-run: sadece planı (JSON) bas, hiçbir şey kurma/yazma
+for arg in "$@"; do
+    if [ "$arg" = "dry-run" ]; then
+        wp eval-file /usr/src/shop-seed/seed.php "$@"
+        exit 0
+    fi
+done
+
 echo "==> WordPress çekirdek kurulumu"
 if ! wp core is-installed 2>/dev/null; then
     wp core install \
         --url="$SITE_URL" \
-        --title="Masa Mağaza" \
+        --title="Yerel Market" \
         --admin_user="$ADMIN_USER" \
         --admin_password="$ADMIN_PASS" \
         --admin_email="$ADMIN_EMAIL" \
@@ -28,45 +41,18 @@ fi
 
 echo "==> Türkçe dil paketi"
 wp language core install tr_TR --activate || true
+wp language plugin install woocommerce tr_TR || true
+wp language theme install storefront tr_TR || true
 
 echo "==> Tema ve eklentiler"
-wp theme activate shopdemo
 wp plugin activate woocommerce
+wp theme activate shopdemo
 
-echo "==> WooCommerce sayfaları ve mağaza ayarları"
-wp wc tool run install_pages --user="$ADMIN_USER" || true
-wp option update woocommerce_currency "TRY"
-wp option update woocommerce_default_country "TR:TR34"
-wp option update woocommerce_store_address "Örnek Mah. Demo Cad. No:1"
-wp option update woocommerce_store_city "İstanbul"
-wp option update woocommerce_onboarding_opt_in "no"
-wp option update woocommerce_task_list_hidden "yes"
-
-echo "==> Kalıcı bağlantılar"
-wp rewrite structure '/%postname%/' --hard
-
-echo "==> Örnek ürünler"
-create_product() {
-    local name="$1" price="$2" sale="$3" desc="$4"
-    if wp post list --post_type=product --title="$name" --field=ID | grep -q .; then
-        echo "    '$name' zaten var, atlanıyor."
-        return
-    fi
-    local args=(--user="$ADMIN_USER" --name="$name" --type=simple
-                --regular_price="$price" --description="$desc" --status=publish)
-    [ -n "$sale" ] && args+=(--sale_price="$sale")
-    wp wc product create "${args[@]}" >/dev/null
-    echo "    + $name (${price} TL)"
-}
-
-create_product "Ahşap Çalışma Masası"      "4500" "3990" "Masif meşe, 140x70 cm çalışma masası."
-create_product "Ergonomik Ofis Sandalyesi" "2750" ""     "Bel destekli, ayarlanabilir ergonomik sandalye."
-create_product "Masa Lambası"              "450"  "349"  "Dokunmatik, 3 kademeli LED masa lambası."
-create_product "Monitör Yükseltici"        "320"  ""     "Bambu monitör yükseltici stand."
-create_product "Kablosuz Klavye & Mouse"   "890"  ""     "Sessiz tuşlu kablosuz klavye-mouse seti."
-create_product "Kitap Desteği (2'li)"      "180"  "149"  "Metal, kaymaz tabanlı kitap desteği seti."
+echo "==> Demo veri (seed/seed.php)"
+wp eval-file /usr/src/shop-seed/seed.php "$@"
 
 echo
 echo "Tamamlandı! 🎉"
-echo "  Mağaza:      $SITE_URL"
-echo "  Yönetim:     $SITE_URL/wp-admin ($ADMIN_USER / $ADMIN_PASS)"
+echo "  Mağaza:       $SITE_URL"
+echo "  Yönetim:      $SITE_URL/wp-admin ($ADMIN_USER / $ADMIN_PASS)"
+echo "  Demo müşteri: demo.musteri@example.com / demo123 (customer-pass= ile değişir)"

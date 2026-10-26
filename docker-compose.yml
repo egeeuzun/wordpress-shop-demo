@@ -38,6 +38,8 @@ services:
     volumes:
       # Tema geliştirmesi için canlı mount (imajı yeniden build etmeden)
       - ./wp-content/themes/shopdemo:/var/www/html/wp-content/themes/shopdemo
+      # Seed kiti: products.csv / seed.php değişiklikleri rebuild'siz denensin
+      - ./seed:/usr/src/shop-seed:ro
       - uploads:/var/www/html/wp-content/uploads
       # Panelden kurulan eklentiler konteyner yeniden yaratılınca kaybolur.
       # Kalıcı olmasını isterseniz açın — ancak volume'daki eski sürümler
