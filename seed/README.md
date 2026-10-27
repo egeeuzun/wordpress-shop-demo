@@ -66,8 +66,9 @@ Options are written as `name=value` (WP-CLI's `eval-file` does not accept
 
 ## What it sets up
 
-- **Store settings:** Turkish lira, sells to Türkiye only, prices include VAT,
-  Istanbul time zone, guest checkout on.
+- **Store settings:** site language Turkish (the language packs are in the
+  image), Turkish lira, sells to Türkiye only, prices include VAT, Istanbul
+  time zone, guest checkout on.
 - **Shipping:** 49.90 ₺ standard delivery, free above 750 ₺.
 - **Pages:** a Storefront homepage and a category menu. The cart and checkout
   pages are switched to the classic WooCommerce checkout, because the TCKN field

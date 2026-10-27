@@ -343,6 +343,14 @@ function lzseed_plan(array $catalog, array $o, int $now): array
 // ---------------------------------------------------------------------------
 function lzseed_apply_settings(): void
 {
+    // Dil paketleri imajda (docker/install-translations.sh). Yoksa siteyi
+    // çevirisi olmayan bir dile çevirip İngilizce bırakmak yerine uyar.
+    if (in_array('tr_TR', get_available_languages(), true)) {
+        update_option('WPLANG', 'tr_TR');
+    } else {
+        WP_CLI::warning('tr_TR dil paketi kurulu değil; site dili değiştirilmedi.');
+    }
+
     $options = [
         'blogname'                                     => 'Yerel Market',
         'blogdescription'                              => LZSEED_DEMO_NOTICE,

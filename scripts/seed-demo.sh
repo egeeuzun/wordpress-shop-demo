@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Lokal ortamda demo market'i kurar: WordPress kurulumu, Türkçe dil paketi,
-# WooCommerce + tema, ardından seed kiti (seed/seed.php): ~90 ürün, sentetik
-# müşteri ve siparişler.
+# Lokal ortamda demo market'i kurar: WordPress kurulumu (Türkçe), WooCommerce
+# + tema, ardından seed kiti (seed/seed.php): ~90 ürün, sentetik müşteri ve
+# siparişler. Dil paketleri imajda; internete çıkılmaz.
 # Önce: docker compose up -d --build
 #
 # Ek argümanlar seed.php'ye geçer, örn:
@@ -34,15 +34,16 @@ if ! wp core is-installed 2>/dev/null; then
         --admin_user="$ADMIN_USER" \
         --admin_password="$ADMIN_PASS" \
         --admin_email="$ADMIN_EMAIL" \
+        --locale=tr_TR \
         --skip-email
 else
     echo "    Zaten kurulu, atlanıyor."
 fi
 
-echo "==> Türkçe dil paketi"
-wp language core install tr_TR --activate || true
-wp language plugin install woocommerce tr_TR || true
-wp language theme install storefront tr_TR || true
+# WooCommerce etkinleştirilmeden önce: mağaza sayfaları (Sepet, Ödeme...)
+# etkinleştirme anındaki dilde oluşturulur.
+echo "==> Site dili: Türkçe"
+wp site switch-language tr_TR
 
 echo "==> Tema ve eklentiler"
 wp plugin activate woocommerce
