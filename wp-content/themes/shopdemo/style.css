@@ -1,55 +1,1215 @@
 /*
 Theme Name: Shop Demo
 Theme URI: https://example.com/
-Description: Storefront tabanlı "Yerel Market" demo child teması (sentetik veri, satış yapılmaz). Özelleştirmelerinizi bu temada yapın; parent tema (Storefront) imaj build sırasında indirilir.
+Description: Storefront tabanlı "Yerel Market" demo child teması (sentetik veri, satış yapılmaz). Modern market düzeni: üst bant, aramalı başlık, kategori çipleri, kart ürünler. Harici yazı tipi yüklemez.
 Author: Ege Uzun
 Template: storefront
-Version: 1.1.0
+Version: 2.0.0
 Text Domain: shopdemo
 */
 
+/* ==========================================================================
+   Tasarım değişkenleri (functions.php'deki SHOPDEMO_COLORS ile aynı tutun)
+   ========================================================================== */
 :root {
-    --shopdemo-primary: #1f6f54;
-    --shopdemo-accent: #e8a33d;
+    --sd-green: #0b7a4b;
+    --sd-green-dark: #075c38;
+    --sd-green-50: #e9f5ef;
+    --sd-green-100: #d3ecdf;
+    --sd-yellow: #ffc845;
+    --sd-red: #e5383b;
+    --sd-ink: #16211c;
+    --sd-text: #47534d;
+    --sd-muted: #77847e;
+    --sd-line: #e4eae7;
+    --sd-bg: #f5f7f6;
+    --sd-card: #ffffff;
+    --sd-radius: 16px;
+    --sd-radius-sm: 10px;
+    --sd-shadow: 0 1px 2px rgba(16, 33, 26, .04), 0 4px 16px rgba(16, 33, 26, .06);
+    --sd-shadow-hover: 0 2px 4px rgba(16, 33, 26, .06), 0 12px 28px rgba(16, 33, 26, .12);
+    --sd-font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+    --sd-max: 1240px;
 }
 
-.site-header,
-.storefront-handheld-footer-bar {
-    background-color: var(--shopdemo-primary);
+/* ==========================================================================
+   Temel
+   ========================================================================== */
+body.shopdemo {
+    background: var(--sd-bg);
+    color: var(--sd-text);
+    font-family: var(--sd-font);
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
 }
 
-.site-header a,
-.site-header .site-title a,
-.main-navigation ul li a {
-    color: #ffffff;
+body.shopdemo h1,
+body.shopdemo h2,
+body.shopdemo h3,
+body.shopdemo h4,
+body.shopdemo .site-title,
+body.shopdemo .product_title {
+    font-family: var(--sd-font);
+    color: var(--sd-ink);
+    font-weight: 750;
+    letter-spacing: -0.015em;
 }
 
-button.button,
-.button.alt,
-.woocommerce-message a.button,
-input[type="submit"] {
-    background-color: var(--shopdemo-accent);
-    color: #1c1c1c;
+body.shopdemo a {
+    color: var(--sd-green);
+    text-decoration: none;
 }
 
-.onsale {
-    background-color: var(--shopdemo-accent);
-    border-color: var(--shopdemo-accent);
-    color: #1c1c1c;
+body.shopdemo a:hover {
+    color: var(--sd-green-dark);
 }
 
-.site-footer {
-    background-color: #16241f;
-    color: #cfd8d3;
+body.shopdemo .col-full {
+    max-width: var(--sd-max);
+    padding-left: 24px;
+    padding-right: 24px;
+    box-sizing: border-box;
 }
 
-.shopdemo-unit {
+body.shopdemo .site-content {
+    padding-top: 24px;
+}
+
+body.shopdemo.page-template-template-homepage .site-main {
+    padding-top: 0;
+}
+
+/* Butonlar: hap biçimi */
+body.shopdemo button,
+body.shopdemo input[type="button"],
+body.shopdemo input[type="reset"],
+body.shopdemo input[type="submit"],
+body.shopdemo .button,
+body.shopdemo .added_to_cart {
+    border-radius: 999px;
+    font-weight: 700;
+    padding: .7em 1.4em;
+    border: 0;
+    box-shadow: none;
+    transition: background-color .15s ease, transform .15s ease;
+}
+
+body.shopdemo a.button,
+body.shopdemo a.button:visited {
+    color: #fff;
+}
+
+body.shopdemo button:hover,
+body.shopdemo input[type="submit"]:hover,
+body.shopdemo .button:hover,
+body.shopdemo a.button:hover {
+    background-color: var(--sd-green-dark);
+    color: #fff;
+}
+
+body.shopdemo button:active,
+body.shopdemo .button:active {
+    transform: scale(.98);
+}
+
+/* Form alanları */
+body.shopdemo input[type="text"],
+body.shopdemo input[type="email"],
+body.shopdemo input[type="tel"],
+body.shopdemo input[type="url"],
+body.shopdemo input[type="password"],
+body.shopdemo input[type="search"],
+body.shopdemo input[type="number"],
+body.shopdemo textarea,
+body.shopdemo select,
+body.shopdemo .select2-container .select2-selection--single {
+    background: #fff;
+    border: 1px solid var(--sd-line);
+    border-radius: var(--sd-radius-sm);
+    box-shadow: none;
+    color: var(--sd-ink);
+    padding: .7em .9em;
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+body.shopdemo .select2-container .select2-selection--single {
+    height: auto;
+    padding: .45em .6em;
+}
+
+body.shopdemo input:focus,
+body.shopdemo textarea:focus,
+body.shopdemo select:focus {
+    border-color: var(--sd-green);
+    box-shadow: 0 0 0 3px var(--sd-green-100);
+    outline: none;
+    background: #fff;
+}
+
+/* ==========================================================================
+   Üst bant
+   ========================================================================== */
+.shopdemo-topbar {
+    background: var(--sd-green-dark);
+    color: #e6f3ec;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.shopdemo-topbar .col-full {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+.shopdemo-topbar__item::before {
+    content: "";
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: 8px;
+    border-radius: 50%;
+    background: var(--sd-yellow);
+    vertical-align: 1px;
+}
+
+.shopdemo-topbar__item--demo::before {
+    background: #8fd3b0;
+}
+
+/* Üst bant aynı mesajı gösterdiği için WooCommerce'in alttaki bildirimi gizli */
+.woocommerce-store-notice,
+p.demo_store {
+    display: none !important;
+}
+
+/* ==========================================================================
+   Başlık: logo | arama | sepet, altında kategori çipleri
+   ========================================================================== */
+body.shopdemo .site-header {
+    background: #fff;
+    border-bottom: 1px solid var(--sd-line);
+    padding: 0;
+    margin-bottom: 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+body.admin-bar.shopdemo .site-header {
+    top: 32px;
+}
+
+body.shopdemo .site-header > .col-full {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 28px;
+    padding-top: 16px;
+    padding-bottom: 16px;
+}
+
+body.shopdemo .site-header > .col-full::before,
+body.shopdemo .site-header > .col-full::after,
+body.shopdemo .storefront-primary-navigation > .col-full::before,
+body.shopdemo .storefront-primary-navigation > .col-full::after {
+    display: none;
+}
+
+body.shopdemo .site-header .site-branding,
+body.shopdemo .site-header .site-search,
+body.shopdemo .site-header .site-header-cart,
+body.shopdemo .site-header .secondary-navigation {
+    float: none;
+    width: auto;
+    margin: 0;
+    clear: none;
+}
+
+body.shopdemo .site-header .secondary-navigation {
+    display: none;
+}
+
+/* Logo: yazı + yaprak */
+body.shopdemo .site-branding .site-title {
+    font-size: 24px;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: -0.03em;
+    line-height: 1;
+}
+
+body.shopdemo .site-branding .site-title a {
+    color: var(--sd-ink);
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+body.shopdemo .site-branding .site-title a::before {
+    content: "";
+    width: 34px;
+    height: 34px;
+    border-radius: 10px 2px 10px 2px;
+    background:
+        radial-gradient(circle at 70% 30%, rgba(255, 255, 255, .45) 0 18%, transparent 19%),
+        linear-gradient(135deg, #20a86a, var(--sd-green-dark));
+    box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .12);
+}
+
+body.shopdemo .site-branding .site-description {
+    display: none;
+}
+
+/* Arama */
+body.shopdemo .site-search {
+    font-size: 15px;
+}
+
+body.shopdemo .site-search .widget_product_search form {
+    position: relative;
+    margin: 0;
+}
+
+body.shopdemo .site-search .widget_product_search input[type="search"] {
+    width: 100%;
+    background: var(--sd-bg);
+    border: 1px solid transparent;
+    border-radius: 999px;
+    padding: 13px 20px 13px 48px;
+    font-size: 15px;
+}
+
+body.shopdemo .site-search .widget_product_search input[type="search"]:focus {
+    background: #fff;
+    border-color: var(--sd-green);
+}
+
+body.shopdemo .site-search .widget_product_search form::before {
+    top: 50%;
+    left: 20px;
+    transform: translateY(-50%);
+    color: var(--sd-muted);
+    line-height: 1;
+}
+
+/* Sepet */
+body.shopdemo .site-header-cart {
+    list-style: none;
+}
+
+body.shopdemo .site-header-cart .cart-contents {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 18px 10px 16px;
+    border-radius: 999px;
+    background: var(--sd-green);
+    color: #fff !important;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+body.shopdemo .site-header-cart .cart-contents:hover {
+    background: var(--sd-green-dark);
+}
+
+body.shopdemo .site-header-cart .cart-contents::after {
+    float: none;
+    order: -1;
+    margin: 0;
+    color: #fff;
+    line-height: 1;
+}
+
+body.shopdemo .site-header-cart .cart-contents .amount {
+    margin-right: 0;
+}
+
+body.shopdemo .site-header-cart .cart-contents .count {
+    opacity: 1;
+    font-size: 12px;
+    font-weight: 700;
+    background: var(--sd-yellow);
+    color: var(--sd-ink);
+    border-radius: 999px;
+    padding: 2px 8px;
+    margin-left: 0;
+}
+
+body.shopdemo .site-header-cart .widget_shopping_cart {
+    border-radius: var(--sd-radius);
+    box-shadow: var(--sd-shadow-hover);
+    background: #fff;
+    right: 0;
+    left: auto;
+    width: 340px;
+    overflow: hidden;
+}
+
+/* Kategori çipleri */
+body.shopdemo .storefront-primary-navigation {
+    background: #fff;
+    border-top: 1px solid var(--sd-line);
+}
+
+body.shopdemo .storefront-primary-navigation > .col-full {
+    display: flex;
+    align-items: center;
+}
+
+body.shopdemo .site-header .main-navigation {
+    float: none;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+body.shopdemo .main-navigation .primary-navigation ul.menu,
+body.shopdemo .main-navigation .primary-navigation ul.nav-menu {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 10px 0;
+    margin: 0;
+}
+
+body.shopdemo .main-navigation .primary-navigation ul.menu::-webkit-scrollbar,
+body.shopdemo .main-navigation .primary-navigation ul.nav-menu::-webkit-scrollbar {
+    display: none;
+}
+
+body.shopdemo .main-navigation .primary-navigation ul.menu > li,
+body.shopdemo .main-navigation .primary-navigation ul.nav-menu > li {
+    float: none;
+    flex: 0 0 auto;
+}
+
+body.shopdemo .main-navigation .primary-navigation ul.menu > li > a,
+body.shopdemo .main-navigation .primary-navigation ul.nav-menu > li > a {
     display: block;
-    font-size: 0.85em;
-    color: #6b7570;
-    margin: 0.25em 0 0.5em;
+    padding: 7px 16px;
+    border-radius: 999px;
+    background: var(--sd-bg);
+    color: var(--sd-ink);
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: background-color .15s ease, color .15s ease;
+}
+
+body.shopdemo .main-navigation .primary-navigation ul.menu > li > a:hover,
+body.shopdemo .main-navigation .primary-navigation ul.menu > li.current-menu-item > a,
+body.shopdemo .main-navigation .primary-navigation ul.nav-menu > li > a:hover {
+    background: var(--sd-green-50);
+    color: var(--sd-green-dark);
+}
+
+/* ==========================================================================
+   Ana sayfa: kahraman alanı
+   ========================================================================== */
+.shopdemo-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    gap: 40px;
+    align-items: center;
+    background:
+        radial-gradient(1200px 400px at -10% -20%, rgba(32, 168, 106, .18), transparent 60%),
+        linear-gradient(135deg, var(--sd-green-50), #fff 70%);
+    border: 1px solid var(--sd-green-100);
+    border-radius: 28px;
+    padding: 48px;
+    margin: 8px 0 48px;
+    overflow: hidden;
+}
+
+.shopdemo-eyebrow {
+    display: inline-block;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--sd-green-dark);
+    background: #fff;
+    border: 1px solid var(--sd-green-100);
+    border-radius: 999px;
+    padding: 5px 12px;
+    margin-bottom: 18px;
+}
+
+body.shopdemo .shopdemo-hero__title {
+    font-size: clamp(30px, 4vw, 48px);
+    line-height: 1.08;
+    margin: 0 0 16px;
+    font-weight: 800;
+    letter-spacing: -0.035em;
+}
+
+.shopdemo-hero__lead {
+    font-size: 17px;
+    color: var(--sd-text);
+    max-width: 34em;
+    margin: 0 0 28px;
+}
+
+.shopdemo-hero__actions {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 28px;
+}
+
+body.shopdemo .shopdemo-hero__cta {
+    padding: 14px 28px;
+    font-size: 16px;
+    box-shadow: 0 8px 20px rgba(11, 122, 75, .25);
+}
+
+.shopdemo-hero__link {
+    font-weight: 700;
+}
+
+.shopdemo-perks {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 22px;
+    font-size: 14px;
+    color: var(--sd-text);
+}
+
+.shopdemo-perks li::before {
+    content: "✓";
+    display: inline-grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    margin-right: 8px;
+    border-radius: 50%;
+    background: var(--sd-green);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.shopdemo-hero__media {
+    display: grid;
+    grid-template-columns: 1.25fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 14px;
+    aspect-ratio: 5 / 4;
+}
+
+.shopdemo-hero__media--1,
+.shopdemo-hero__media--2 {
+    grid-template-rows: 1fr;
+}
+
+.shopdemo-hero__tile {
+    position: relative;
+    border-radius: 20px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: var(--sd-shadow);
+}
+
+.shopdemo-hero__media--3 .shopdemo-hero__tile:first-child {
+    grid-row: 1 / span 2;
+}
+
+.shopdemo-hero__tile img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform .4s ease;
+}
+
+.shopdemo-hero__tile:hover img {
+    transform: scale(1.04);
+}
+
+.shopdemo-hero__tile span {
+    position: absolute;
+    left: 12px;
+    bottom: 12px;
+    background: rgba(255, 255, 255, .92);
+    color: var(--sd-ink);
+    font-size: 13px;
+    font-weight: 700;
+    border-radius: 999px;
+    padding: 5px 12px;
+}
+
+.shopdemo-anchor {
+    display: block;
+    position: relative;
+    top: -140px;
+}
+
+/* ==========================================================================
+   Bölüm başlıkları
+   ========================================================================== */
+body.shopdemo .storefront-product-section {
+    margin-bottom: 48px;
+}
+
+body.shopdemo .storefront-product-section .section-title,
+body.shopdemo .woocommerce-products-header__title,
+body.shopdemo .related > h2,
+body.shopdemo .upsells > h2 {
+    text-align: left;
+    font-size: 26px;
+    font-weight: 800;
+    margin: 0 0 20px;
+}
+
+body.shopdemo .storefront-on-sale-products .section-title::after {
+    content: "Fırsat";
+    display: inline-block;
+    margin-left: 12px;
+    vertical-align: 4px;
+    font-size: 12px;
+    font-weight: 800;
+    color: #fff;
+    background: var(--sd-red);
+    border-radius: 999px;
+    padding: 3px 10px;
+    letter-spacing: 0;
+}
+
+/* ==========================================================================
+   Ürün ızgarası ve kartlar
+   ========================================================================== */
+body.shopdemo ul.products {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
+    margin: 0 0 32px;
+    padding: 0;
+}
+
+body.shopdemo ul.products::before,
+body.shopdemo ul.products::after {
+    display: none !important;
+}
+
+body.shopdemo ul.products li.product {
+    width: auto !important;
+    float: none !important;
+    margin: 0 !important;
+    clear: none !important;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    background: var(--sd-card);
+    border: 1px solid var(--sd-line);
+    border-radius: var(--sd-radius);
+    padding: 12px 12px 14px;
+    transition: box-shadow .2s ease, transform .2s ease, border-color .2s ease;
+}
+
+body.shopdemo ul.products li.product:hover {
+    box-shadow: var(--sd-shadow-hover);
+    border-color: transparent;
+    transform: translateY(-2px);
+}
+
+body.shopdemo ul.products li.product .woocommerce-LoopProduct-link {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    color: inherit;
+}
+
+body.shopdemo ul.products li.product img {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    border-radius: 12px;
+    margin: 0 0 12px;
+    background: var(--sd-bg);
+}
+
+body.shopdemo ul.products li.product .woocommerce-loop-product__title,
+body.shopdemo ul.products li.product h2,
+body.shopdemo ul.products li.product h3 {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--sd-ink);
+    margin: 0 0 4px;
+    padding: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+body.shopdemo .shopdemo-unit {
+    display: block;
+    font-size: 13px;
+    color: var(--sd-muted);
+    margin: 0 0 10px;
+}
+
+body.shopdemo ul.products li.product .price {
+    margin-top: auto;
+    margin-bottom: 0;
+    font-size: 19px;
+    font-weight: 800;
+    color: var(--sd-ink);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 8px;
+}
+
+body.shopdemo .price del {
+    order: 2;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--sd-muted);
+    opacity: 1;
+}
+
+body.shopdemo .price ins {
+    text-decoration: none;
+    color: var(--sd-red);
+    font-weight: 800;
+    background: none;
+}
+
+body.shopdemo ul.products li.product .button {
+    margin: 12px 0 0;
+    width: 100%;
+    text-align: center;
+    padding: 10px 14px;
+    font-size: 14px;
+    background: var(--sd-green-50);
+    color: var(--sd-green-dark);
+}
+
+body.shopdemo ul.products li.product .button:hover {
+    background: var(--sd-green);
+    color: #fff;
+}
+
+body.shopdemo ul.products li.product .button.loading {
+    opacity: .7;
+}
+
+body.shopdemo ul.products li.product .added_to_cart {
+    display: block;
+    text-align: center;
+    margin-top: 8px;
+    padding: 0;
+    font-size: 13px;
+    background: none;
+    color: var(--sd-green);
+}
+
+/* İndirim etiketi */
+body.shopdemo .onsale {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 2;
+    margin: 0;
+    min-height: 0;
+    min-width: 0;
+    line-height: 1.5;
+    padding: 3px 10px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--sd-red);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: none;
+}
+
+/* Kategori kutucukları */
+body.shopdemo .storefront-product-categories ul.products {
+    grid-template-columns: repeat(9, minmax(0, 1fr));
+    gap: 12px;
+}
+
+body.shopdemo ul.products li.product-category {
+    padding: 10px 10px 12px;
+    text-align: center;
+}
+
+body.shopdemo ul.products li.product-category > a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: var(--sd-ink);
+}
+
+body.shopdemo ul.products li.product-category img {
+    border-radius: 50%;
+    margin-bottom: 10px;
+}
+
+body.shopdemo ul.products li.product-category .woocommerce-loop-category__title {
+    font-size: 14px;
+    font-weight: 700;
+    min-height: 0;
+    display: block;
+    overflow: visible;
+    -webkit-line-clamp: unset;
+}
+
+body.shopdemo ul.products li.product-category .count {
+    display: block;
+    background: none;
+    color: var(--sd-muted);
+    font-size: 12px;
+    font-weight: 500;
+    margin-top: 2px;
+}
+
+/* ==========================================================================
+   Mağaza sayfası
+   ========================================================================== */
+body.shopdemo .storefront-breadcrumb {
+    background: none;
+    margin: 0;
+    padding: 16px 0 0;
+    font-size: 13px;
+}
+
+body.shopdemo .storefront-breadcrumb .woocommerce-breadcrumb {
+    padding: 0;
+    margin: 0;
+}
+
+body.shopdemo .woocommerce-breadcrumb a::before {
+    display: none;
+}
+
+body.shopdemo .storefront-sorting {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+
+body.shopdemo .storefront-sorting::before,
+body.shopdemo .storefront-sorting::after {
+    display: none;
+}
+
+body.shopdemo .storefront-sorting .woocommerce-ordering,
+body.shopdemo .storefront-sorting .woocommerce-result-count,
+body.shopdemo .storefront-sorting .woocommerce-pagination {
+    float: none;
+    margin: 0;
+    padding: 0;
+}
+
+body.shopdemo .woocommerce-pagination .page-numbers li .page-numbers {
+    border-radius: 999px;
+    min-width: 36px;
+    background: #fff;
+    border: 1px solid var(--sd-line);
+}
+
+body.shopdemo .woocommerce-pagination .page-numbers li .page-numbers.current {
+    background: var(--sd-green);
+    color: #fff;
+    border-color: var(--sd-green);
+}
+
+/* ==========================================================================
+   Ürün sayfası
+   ========================================================================== */
+body.shopdemo.single-product div.product {
+    background: #fff;
+    border: 1px solid var(--sd-line);
+    border-radius: 24px;
+    padding: 32px;
+    margin-bottom: 40px;
+}
+
+body.shopdemo.single-product div.product .woocommerce-product-gallery {
+    border-radius: 18px;
+    overflow: hidden;
+    background: var(--sd-bg);
+}
+
+body.shopdemo.single-product div.product .product_title {
+    font-size: clamp(26px, 3vw, 36px);
+    line-height: 1.15;
+    margin-bottom: 12px;
+}
+
+body.shopdemo.single-product div.product p.price {
+    font-size: 30px;
+    font-weight: 800;
+    color: var(--sd-ink);
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 4px;
+}
+
+body.shopdemo.single-product div.product .shopdemo-unit {
+    font-size: 15px;
+    margin-bottom: 18px;
+}
+
+body.shopdemo.single-product div.product .woocommerce-product-details__short-description {
+    color: var(--sd-text);
+    padding: 14px 16px;
+    background: var(--sd-bg);
+    border-radius: var(--sd-radius-sm);
+    margin-bottom: 22px;
+}
+
+body.shopdemo.single-product div.product form.cart {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0;
+    margin-bottom: 22px;
+}
+
+body.shopdemo.single-product div.product form.cart::before,
+body.shopdemo.single-product div.product form.cart::after {
+    display: none;
+}
+
+body.shopdemo .quantity .qty {
+    width: 5em;
+    text-align: center;
+    border-radius: 999px;
+    padding: 12px 10px;
+    font-weight: 700;
+}
+
+body.shopdemo.single-product div.product form.cart .button {
+    flex: 1;
+    max-width: 320px;
+    padding: 14px 24px;
+    font-size: 16px;
+    margin: 0;
+}
+
+body.shopdemo.single-product div.product .product_meta {
+    font-size: 13px;
+    color: var(--sd-muted);
+    border-top: 1px solid var(--sd-line);
+    padding-top: 16px;
+}
+
+body.shopdemo .woocommerce-tabs {
+    padding-top: 24px;
+}
+
+body.shopdemo .woocommerce-tabs ul.tabs {
+    border: 0;
+}
+
+body.shopdemo .woocommerce-tabs ul.tabs li {
+    border: 0;
+}
+
+body.shopdemo .woocommerce-tabs ul.tabs li a {
+    border-radius: var(--sd-radius-sm);
+    padding: 10px 14px;
+    font-weight: 600;
+}
+
+body.shopdemo .woocommerce-tabs ul.tabs li.active a {
+    background: var(--sd-green-50);
+    color: var(--sd-green-dark);
+}
+
+body.shopdemo .woocommerce-tabs ul.tabs li.active::after {
+    display: none;
+}
+
+body.shopdemo .storefront-sticky-add-to-cart {
+    border-bottom: 1px solid var(--sd-line);
+    box-shadow: var(--sd-shadow);
+}
+
+/* ==========================================================================
+   Sepet, ödeme, hesabım
+   ========================================================================== */
+body.shopdemo table.shop_table,
+body.shopdemo .woocommerce-MyAccount-content table {
+    background: #fff;
+    border: 1px solid var(--sd-line);
+    border-radius: var(--sd-radius);
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+}
+
+body.shopdemo table.shop_table th,
+body.shopdemo table.shop_table td,
+body.shopdemo table.shop_table tbody tr:nth-child(2n) td,
+body.shopdemo table.shop_table tbody th {
+    background: transparent;
+    border-bottom: 1px solid var(--sd-line);
+}
+
+body.shopdemo table.shop_table thead th {
+    background: var(--sd-bg);
+    font-size: 13px;
+    text-transform: none;
+    color: var(--sd-muted);
+}
+
+body.shopdemo table.cart td.product-thumbnail img {
+    border-radius: 10px;
+    max-width: 72px;
+}
+
+body.shopdemo .cart-collaterals .cart_totals,
+body.shopdemo #order_review,
+body.shopdemo .woocommerce-checkout .col2-set,
+body.shopdemo .woocommerce-MyAccount-navigation,
+body.shopdemo .woocommerce-MyAccount-content,
+body.shopdemo form.woocommerce-form-login,
+body.shopdemo form.woocommerce-form-register {
+    background: #fff;
+    border: 1px solid var(--sd-line);
+    border-radius: 20px;
+    padding: 24px;
+    box-sizing: border-box;
+}
+
+body.shopdemo #payment {
+    background: var(--sd-bg);
+    border-radius: var(--sd-radius);
+}
+
+body.shopdemo #payment .payment_methods > li {
+    background: transparent;
+}
+
+body.shopdemo #payment .place-order .button,
+body.shopdemo .wc-proceed-to-checkout .button {
+    width: 100%;
+    padding: 16px;
+    font-size: 17px;
+}
+
+body.shopdemo .woocommerce-MyAccount-navigation ul {
+    border: 0;
+    margin: 0;
+}
+
+body.shopdemo .woocommerce-MyAccount-navigation ul li {
+    border: 0;
+}
+
+body.shopdemo .woocommerce-MyAccount-navigation ul li a {
+    display: block;
+    padding: 10px 14px;
+    border-radius: var(--sd-radius-sm);
+    color: var(--sd-ink);
+    font-weight: 600;
+}
+
+body.shopdemo .woocommerce-MyAccount-navigation ul li a::before {
+    display: none;
+}
+
+body.shopdemo .woocommerce-MyAccount-navigation ul li.is-active a {
+    background: var(--sd-green-50);
+    color: var(--sd-green-dark);
+}
+
+/* Bildirimler */
+body.shopdemo .woocommerce-message,
+body.shopdemo .woocommerce-info,
+body.shopdemo .woocommerce-error,
+body.shopdemo .woocommerce-noreviews,
+body.shopdemo p.no-comments {
+    border-radius: var(--sd-radius);
+    border-left: 0;
+    background: var(--sd-green);
+}
+
+body.shopdemo .woocommerce-info {
+    background: #2f6db5;
+}
+
+body.shopdemo .woocommerce-error {
+    background: var(--sd-red);
+}
+
+/* ==========================================================================
+   Footer
+   ========================================================================== */
+body.shopdemo .site-footer {
+    background: #0e2a1e;
+    color: #b7c8bf;
+    padding: 40px 0 24px;
+    margin-top: 32px;
+    font-size: 14px;
+}
+
+body.shopdemo .site-footer .site-info {
+    padding: 0;
+    border-top: 1px solid rgba(255, 255, 255, .1);
+    padding-top: 20px;
 }
 
 .shopdemo-demo-notice {
-    color: var(--shopdemo-accent);
+    color: var(--sd-yellow);
+}
+
+/* Mobil alt çubuk */
+body.shopdemo .storefront-handheld-footer-bar {
+    background: #fff;
+    border-top: 1px solid var(--sd-line);
+    box-shadow: 0 -4px 16px rgba(16, 33, 26, .06);
+}
+
+body.shopdemo .storefront-handheld-footer-bar ul li > a,
+body.shopdemo .storefront-handheld-footer-bar ul li.search .site-search {
+    background: #fff;
+    color: var(--sd-ink);
+    border: 0;
+}
+
+body.shopdemo .storefront-handheld-footer-bar ul li > a::before {
+    color: var(--sd-green);
+}
+
+body.shopdemo .storefront-handheld-footer-bar ul li.cart .count {
+    background: var(--sd-green);
+    color: #fff;
+    border-color: #fff;
+}
+
+/* ==========================================================================
+   Duyarlı düzen
+   ========================================================================== */
+@media (max-width: 1024px) {
+    .shopdemo-hero {
+        padding: 36px;
+        gap: 28px;
+    }
+
+    body.shopdemo ul.products {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    body.shopdemo .storefront-product-categories ul.products {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 767px) {
+    body.shopdemo .col-full {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+
+    .shopdemo-topbar .col-full {
+        justify-content: center;
+        text-align: center;
+    }
+
+    .shopdemo-topbar__item--truck {
+        display: none;
+    }
+
+    body.shopdemo .site-header {
+        position: relative;
+        top: 0 !important;
+    }
+
+    body.shopdemo .site-header > .col-full {
+        grid-template-columns: 1fr;
+        padding-top: 12px;
+        padding-bottom: 12px;
+    }
+
+    /* Menü düğmesi logo satırının sağında; ayrı bir satır kaplamasın */
+    body.shopdemo .storefront-primary-navigation {
+        border-top: 0;
+    }
+
+    body.shopdemo .main-navigation button.menu-toggle {
+        position: absolute;
+        top: 12px;
+        right: 16px;
+        margin: 0;
+        padding: 9px 16px 9px 40px;
+        border: 1px solid var(--sd-line);
+        border-radius: 999px;
+        background: #fff;
+        color: var(--sd-ink);
+        font-size: 14px;
+    }
+
+    body.shopdemo .main-navigation button.menu-toggle span::before,
+    body.shopdemo .main-navigation button.menu-toggle::before,
+    body.shopdemo .main-navigation button.menu-toggle::after {
+        left: 16px;
+    }
+
+    body.shopdemo .handheld-navigation {
+        padding-bottom: 8px;
+    }
+
+    /* Mobilde sepet ve arama alttaki sabit çubukta */
+    body.shopdemo .site-header .site-header-cart,
+    body.shopdemo .site-header .site-search {
+        display: none;
+    }
+
+    body.shopdemo .storefront-primary-navigation > .col-full {
+        display: block;
+    }
+
+    .shopdemo-hero {
+        grid-template-columns: 1fr;
+        padding: 24px;
+        border-radius: 22px;
+        margin-bottom: 32px;
+    }
+
+    .shopdemo-hero__media {
+        aspect-ratio: 16 / 10;
+    }
+
+    body.shopdemo ul.products {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    body.shopdemo .storefront-product-categories ul.products {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    body.shopdemo ul.products li.product {
+        padding: 10px;
+    }
+
+    body.shopdemo.single-product div.product {
+        padding: 18px;
+    }
+
+    body.shopdemo .storefront-product-section .section-title {
+        font-size: 22px;
+    }
 }
