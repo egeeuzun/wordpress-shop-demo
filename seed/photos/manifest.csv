@@ -2,7 +2,7 @@ sku,search,keywords,exclude,file,author,license,source_url
 LZ-0001,tomatoes on the vine,tomato,sauce|soup|plant|flower,File:Tomato je.jpg,Softeis,CC BY-SA 3.0,https://commons.wikimedia.org/wiki/File:Tomato_je.jpg
 LZ-0002,cucumbers,cucumber,sea cucumber|plant|flower|pickle,File:Ryerson Market cucumbers on sale.jpg,Jason Zhang,CC BY-SA 3.0,https://commons.wikimedia.org/wiki/File:Ryerson_Market_cucumbers_on_sale.jpg
 LZ-0003,onions,onion,soup|rings|plant|flower|field,File:Mixed onions.jpg,Colin,CC BY-SA 3.0,https://commons.wikimedia.org/wiki/File:Mixed_onions.jpg
-LZ-0004,raw potatoes,potato|kartoffel,flower|plant|field|fries|chips|mashed|beetle,,,,
+LZ-0004,raw potatoes,potato|kartoffel,flower|plant|field|fries|chips|mashed|beetle,File:Raw sweet potato.jpg,Fumikas Sagisavas,CC0,https://commons.wikimedia.org/wiki/File:Raw_sweet_potato.jpg
 LZ-0005,bananas,banana,plant|tree|flower|split,File:Bunch of bananas on sale.jpg,Wilfredor,CC0,https://commons.wikimedia.org/wiki/File:Bunch_of_bananas_on_sale.jpg
 LZ-0006,red apples,apple,tree|blossom|pie|logo|computer|applesauce|apple pie,File:Red Apple.jpg,"Abhijit Tembhekar from Mumbai, India",CC BY 2.0,https://commons.wikimedia.org/wiki/File:Red_Apple.jpg
 LZ-0007,lemons,lemon,tree|tart|juice|cake,File:Lemon.jpg,André Karwath aka Aka,CC BY-SA 2.5,https://commons.wikimedia.org/wiki/File:Lemon.jpg
@@ -10,79 +10,79 @@ LZ-0008,oranges,orange,tree|juice|county|river|orangutan|orangery,File:Oranges -
 LZ-0009,parsley,parsley,plant pot,File:Petroselinum crispum 003.JPG,H. Zell,CC BY-SA 3.0,https://commons.wikimedia.org/wiki/File:Petroselinum_crispum_003.JPG
 LZ-0010,lettuce,lettuce,field|sea lettuce,File:Lactuca sativa 'Ashbrook'.jpg,DeFacto,CC BY-SA 4.0,https://commons.wikimedia.org/wiki/File:Lactuca_sativa_%27Ashbrook%27.jpg
 LZ-0011,milk bottle,milk,milk glass|thistle|snake|weed,File:Milk bottle and two doughnuts.jpg,www.Pixel.la Free Stock Photos,CC0,https://commons.wikimedia.org/wiki/File:Milk_bottle_and_two_doughnuts.jpg
-LZ-0012,glass of milk,glass of milk|milk in a glass|cup of milk|milk bottle|bottle of milk,milk glass|thistle,,,,
+LZ-0012,glass of milk,glass of milk|milk in a glass|cup of milk|milk bottle|bottle of milk,milk glass|thistle,File:Glass of Milk (33657535532).jpg,NIAID,CC BY 2.0,https://commons.wikimedia.org/wiki/File:Glass_of_Milk_(33657535532).jpg
 LZ-0013,yogurt,yogurt|yoghurt|yogourt,frozen|drink,File:Joghurt.jpg,No machine-readable author provided. Rainer Zenz assumed (based on copyright claims).,CC BY-SA 3.0,https://commons.wikimedia.org/wiki/File:Joghurt.jpg
 LZ-0014,feta cheese,feta|white cheese|beyaz peynir,salad|pie|pastry,File:Feta Greece 2.jpg,Bilinmiyor,CC BY-SA 3.0,https://commons.wikimedia.org/wiki/File:Feta_Greece_2.jpg
-LZ-0015,kashkaval cheese,kashkaval|kaşar|kasar|cheddar|gouda|yellow cheese|cheese block|edam,sandwich|burger|pizza|sauce|cake,,,,
-LZ-0016,butter block,butter,butterfly|peanut|butterbur|buttercup|cookie|chicken|cake|bread|sauce|knife|butternut,,,,
+LZ-0015,kashkaval cheese,kashkaval|kaşar|kasar|cheddar|gouda|yellow cheese|cheese block|edam,sandwich|burger|pizza|sauce|cake,File:Kashkaval-Galichki-Republik of Macedonia.jpg,Nnikolce,Public domain,https://commons.wikimedia.org/wiki/File:Kashkaval-Galichki-Republik_of_Macedonia.jpg
+LZ-0016,butter block,butter,butterfly|peanut|butterbur|buttercup|cookie|chicken|cake|bread|sauce|knife|butternut,File:Block of butter in butter dish.jpg,Qwertyxp2000,CC BY 4.0,https://commons.wikimedia.org/wiki/File:Block_of_butter_in_butter_dish.jpg
 LZ-0017,eggs in carton,egg,bird|nest|easter|fried|boiled|omelette|eggplant,File:Egg cartons with chicken eggs 03.jpg,Krzysztof Golik,CC BY-SA 4.0,https://commons.wikimedia.org/wiki/File:Egg_cartons_with_chicken_eggs_03.jpg
-LZ-0018,black olives bowl,olives,tree|branch|grove|oil|harvest,,,,
-LZ-0019,honey jar,honey,bee|honeysuckle|honeymoon|cake,,,,
-LZ-0020,chocolate spread,chocolate spread|hazelnut spread|nutella|nocilla|cocoa spread,cake,,,,
-LZ-0021,raw minced meat,minced|ground beef|mince|hackfleisch|kıyma|ground meat,cooked|burger|lasagna|pie|sauce|kebab|ball|soup|pasta,,,,
-LZ-0022,raw beef cubes,raw beef|beef cubes|diced beef|beef chunks|stewing beef|beef meat|raw meat,cooked|stew|curry|soup|steak|grill|cattle|cow,,,,
-LZ-0023,raw chicken breast,chicken breast|chicken fillet|chicken filet|hähnchenbrust,cooked|grilled|fried|roast|salad|sandwich|curry|dish,,,,
-LZ-0024,raw chicken drumsticks,drumstick|chicken leg|chicken thigh,cooked|fried|roast|grilled|bbq|barbecue|drum|music,,,,
-LZ-0025,whole raw chicken,whole chicken|raw chicken|plucked chicken|chicken carcass,roast|grilled|cooked|fried|live|farm|soup,,,,
+LZ-0018,black olives bowl,olives,tree|branch|grove|oil|harvest,File:Fresh green olives and black olives served at a food display.jpg,Shixart1985,CC BY 2.0,https://commons.wikimedia.org/wiki/File:Fresh_green_olives_and_black_olives_served_at_a_food_display.jpg
+LZ-0019,honey jar,honey,bee|honeysuckle|honeymoon|cake,File:Three French monofloral honey jars.jpg,Hayden Soloviev,CC BY 4.0,https://commons.wikimedia.org/wiki/File:Three_French_monofloral_honey_jars.jpg
+LZ-0020,chocolate spread,chocolate spread|hazelnut spread|nutella|nocilla|cocoa spread,cake,File:Chocolate Spread.jpg,Gaurav Dhwaj Khadka,CC BY-SA 4.0,https://commons.wikimedia.org/wiki/File:Chocolate_Spread.jpg
+LZ-0021,raw minced meat,minced|ground beef|mince|hackfleisch|kıyma|ground meat,cooked|burger|lasagna|pie|sauce|kebab|ball|soup|pasta,File:Hackfleisch-1.jpg,No machine-readable author provided. Rainer Zenz assumed (based on copyright claims).,CC BY-SA 3.0,https://commons.wikimedia.org/wiki/File:Hackfleisch-1.jpg
+LZ-0022,raw beef cubes,raw beef|beef cubes|diced beef|beef chunks|stewing beef|beef meat|raw meat,cooked|stew|curry|soup|steak|grill|cattle|cow,File:SZ 深圳 Shenzhen 光明新區 Guangming N 次方公園商場 N Square Park Mall shop 聖琼韓式烤肉自助餐廳 Saint Joan Korean Barbecue Beef Buffet Restaurant pork n raw beef November 2025 R12S 07.jpg,BEien Sahwo TAoo MMP,CC0,https://commons.wikimedia.org/wiki/File:SZ_%E6%B7%B1%E5%9C%B3_Shenzhen_%E5%85%89%E6%98%8E%E6%96%B0%E5%8D%80_Guangming_N_%E6%AC%A1%E6%96%B9%E5%85%AC%E5%9C%92%E5%95%86%E5%A0%B4_N_Square_Park_Mall_shop_%E8%81%96%E7%90%BC%E9%9F%93%E5%BC%8F%E7%83%A4%E8%82%89%E8%87%AA%E5%8A%A9%E9%A4%90%E5%BB%B3_Saint_Joan_Korean_Barbecue_Beef_Buffet_Restaurant_pork_n_raw_beef_November_2025_R12S_07.jpg
+LZ-0023,raw chicken breast,chicken breast|chicken fillet|chicken filet|hähnchenbrust,cooked|grilled|fried|roast|salad|sandwich|curry|dish,File:CHICKEN BREAST.jpg,MrBeastRapper,CC BY-SA 4.0,https://commons.wikimedia.org/wiki/File:CHICKEN_BREAST.jpg
+LZ-0024,raw chicken drumsticks,drumstick|chicken leg|chicken thigh,cooked|fried|roast|grilled|bbq|barbecue|drum|music,File:Chicken leg pieces with onion and carrot slice.jpg,Afifa Afrin,CC BY-SA 4.0,https://commons.wikimedia.org/wiki/File:Chicken_leg_pieces_with_onion_and_carrot_slice.jpg
+LZ-0025,whole raw chicken,whole chicken|raw chicken|plucked chicken|chicken carcass,roast|grilled|cooked|fried|live|farm|soup,File:Whole raw chicken - Japan Dec 22 2019.jpeg,Nesnad,CC BY 4.0,https://commons.wikimedia.org/wiki/File:Whole_raw_chicken_-_Japan_Dec_22_2019.jpeg
 LZ-0026,lamb chops,lamb chop|lamb rack|lamb cutlet|lamb,sheep|animal|farm,File:Liat Portal for Foodie Disorder – Lamb chops with asparagus.jpg,HaJunkiyada,CC BY-SA 4.0,https://commons.wikimedia.org/wiki/File:Liat_Portal_for_Foodie_Disorder_%E2%80%93_Lamb_chops_with_asparagus.jpg
 LZ-0027,sucuk,sucuk|sujuk|soudjouk,sandwich|egg,File:Sucuk-2.jpg,No machine-readable author provided. Rainer Zenz assumed (based on copyright claims).,CC BY-SA 3.0,https://commons.wikimedia.org/wiki/File:Sucuk-2.jpg
-LZ-0028,sliced smoked turkey breast,turkey breast|turkey ham|sliced turkey|turkey slices|smoked turkey|cold cuts,bird|wild|roast|thanksgiving|flag,,,,
+LZ-0028,sliced smoked turkey breast,turkey breast|turkey ham|sliced turkey|turkey slices|smoked turkey|cold cuts,bird|wild|roast|thanksgiving|flag,"File:Turkey breast on toasted white bread, with melted cheddar, marinated olives, bell pepper, chili powder, black pepper, and salt - Massachusetts.jpg",Daderot,CC0,"https://commons.wikimedia.org/wiki/File:Turkey_breast_on_toasted_white_bread,_with_melted_cheddar,_marinated_olives,_bell_pepper,_chili_powder,_black_pepper,_and_salt_-_Massachusetts.jpg"
 LZ-0029,white rice,rice,field|paddy|plant|terrace|cake|cracker|university|ricer,File:White rice at a restaurant.jpg,"Calgary Reviews from Calgary, Canada",CC BY 2.0,https://commons.wikimedia.org/wiki/File:White_rice_at_a_restaurant.jpg
 LZ-0030,rice grains,rice,field|paddy|plant|terrace|cake|cracker|university|ricer,File:Mushqbudji rice grains close-up.jpg,Zahoor Ahmad Reshi,CC0,https://commons.wikimedia.org/wiki/File:Mushqbudji_rice_grains_close-up.jpg
 LZ-0031,red lentils,lentil,soup|plant|field,File:Split Red Lentil.jpg,Sanjay Acharya,CC BY-SA 4.0,https://commons.wikimedia.org/wiki/File:Split_Red_Lentil.jpg
-LZ-0032,dried chickpeas,chickpea|garbanzo|nohut|kichererbse,plant|flower|field|hummus|curry|salad|soup,,,,
+LZ-0032,dried chickpeas,chickpea|garbanzo|nohut|kichererbse,plant|flower|field|hummus|curry|salad|soup,File:Dried chickpeas for sale - market in Israel.jpg,Danielrosehill,CC BY 4.0,https://commons.wikimedia.org/wiki/File:Dried_chickpeas_for_sale_-_market_in_Israel.jpg
 LZ-0033,white beans,beans,plant|field|flower|soup|coffee|baked beans,File:Pinto Beans Seeds.jpg,Sanjay Acharya,CC BY-SA 4.0,https://commons.wikimedia.org/wiki/File:Pinto_Beans_Seeds.jpg
 LZ-0034,bulgur,bulgur|bulghur|burghul|bulgar wheat,salad|tabbouleh|pilaf,File:Bulgur lose 26022015 8675.jpg,Johann Jaritz,CC BY-SA 3.0 at,https://commons.wikimedia.org/wiki/File:Bulgur_lose_26022015_8675.jpg
-LZ-0035,dry spaghetti,spaghetti,bolognese|sauce|carbonara|cooked|plate|tower|structure|squash|tree|western,,,,
-LZ-0036,wheat flour,flour,flower|mill|bread|cake|beetle|moth|flourish,,,,
-LZ-0037,granulated sugar,sugar,cane|beet|plant|field|candy|glider|maple|loaf|factory|mill,,,,
-LZ-0038,sunflower oil,sunflower oil|cooking oil|vegetable oil,field|store|shop|supermarket|shelf|painting,,,,
-LZ-0039,olive oil bottle,olive oil,tree|lamp|grove|press|mill,,,,
+LZ-0035,dry spaghetti,spaghetti,bolognese|sauce|carbonara|cooked|plate|tower|structure|squash|tree|western,File:Spaghetti measure macro.jpg,Bodhi Peace,CC BY-SA 4.0,https://commons.wikimedia.org/wiki/File:Spaghetti_measure_macro.jpg
+LZ-0036,wheat flour,flour,flower|mill|bread|cake|beetle|moth|flourish,File:All-Purpose Flour (4107895947).jpg,Veganbaking.net from USA,CC BY-SA 2.0,https://commons.wikimedia.org/wiki/File:All-Purpose_Flour_(4107895947).jpg
+LZ-0037,granulated sugar,sugar,cane|beet|plant|field|candy|glider|maple|loaf|factory|mill,File:Sugar on a blue plate (close up).jpg,User:Lcarsdata,CC BY-SA 3.0,https://commons.wikimedia.org/wiki/File:Sugar_on_a_blue_plate_(close_up).jpg
+LZ-0038,sunflower oil,sunflower oil|cooking oil|vegetable oil,field|store|shop|supermarket|shelf|painting,File:Sunflower oil and sunflower.jpg,torange.biz,CC BY 4.0,https://commons.wikimedia.org/wiki/File:Sunflower_oil_and_sunflower.jpg
+LZ-0039,olive oil bottle,olive oil,tree|lamp|grove|press|mill,File:Olive oil bottle Bertolli Riserva Premium.jpg,Badagnani (talk),CC BY 3.0,https://commons.wikimedia.org/wiki/File:Olive_oil_bottle_Bertolli_Riserva_Premium.jpg
 LZ-0040,tomato paste,tomato paste|tomato puree|salça|tomatenmark,pasta dish,File:Tomato paste on spoon.jpg,SKopp,CC BY-SA 3.0,https://commons.wikimedia.org/wiki/File:Tomato_paste_on_spoon.jpg
-LZ-0041,table salt,salt shaker|table salt|salt cellar|salt crystals|sea salt|kosher salt,pan|mine|flat|lake|evaporation|works|marsh|road,,,,
+LZ-0041,table salt,salt shaker|table salt|salt cellar|salt crystals|sea salt|kosher salt,pan|mine|flat|lake|evaporation|works|marsh|road,File:Table salt with salt shaker V1.jpg,Poyraz 72,CC BY-SA 4.0,https://commons.wikimedia.org/wiki/File:Table_salt_with_salt_shaker_V1.jpg
 LZ-0042,potato chips,chips|crisps,chocolate chips|wood chips|computer|silicon|microchip|fish and chips,File:Potato-Chips.jpg,Evan-Amos,Public domain,https://commons.wikimedia.org/wiki/File:Potato-Chips.jpg
 LZ-0043,roasted peanuts,peanut,butter|plant|field|cartoon,"File:Peanuts (Arachis hypogaea) - in shell, shell cracked open, shelled, peeled.jpg",Ivar Leidus,CC BY-SA 4.0,"https://commons.wikimedia.org/wiki/File:Peanuts_(Arachis_hypogaea)_-_in_shell,_shell_cracked_open,_shelled,_peeled.jpg"
 LZ-0044,mixed nuts,nuts,bolt|screw|tree|squirrel,File:Liat Portal for Foodie Disorder - Mixed nuts and dried fruit.jpg,HaJunkiyada,CC BY-SA 4.0,https://commons.wikimedia.org/wiki/File:Liat_Portal_for_Foodie_Disorder_-_Mixed_nuts_and_dried_fruit.jpg
-LZ-0045,milk chocolate,milk chocolate|chocolate bar|chocolate pieces,cake|drink|hot|cookie|ice cream|factory,,,,
+LZ-0045,milk chocolate,milk chocolate|chocolate bar|chocolate pieces,cake|drink|hot|cookie|ice cream|factory,File:Milka Alpine Milk Chocolate bar 100g.jpg,Ubcule,CC BY-SA 4.0,https://commons.wikimedia.org/wiki/File:Milka_Alpine_Milk_Chocolate_bar_100g.jpg
 LZ-0046,dark chocolate,chocolate,cake|drink|hot|cookie|ice cream|factory|labrador,File:2023 Gorzka czekolada.jpg,Jacek Halicki,CC BY-SA 4.0,https://commons.wikimedia.org/wiki/File:2023_Gorzka_czekolada.jpg
-LZ-0047,chocolate biscuits,biscuit|cookie|cookies,dog|cat|software|browser|gingerbread,,,,
-LZ-0048,crackers,cracker,firecracker|nutcracker|nut cracker|safe|graham,,,,
+LZ-0047,chocolate biscuits,biscuit|cookie|cookies,dog|cat|software|browser|gingerbread,File:McVitie's chocolate digestive biscuit.jpg,Jolly Janner,Public domain,https://commons.wikimedia.org/wiki/File:McVitie%27s_chocolate_digestive_biscuit.jpg
+LZ-0048,crackers,cracker,firecracker|nutcracker|nut cracker|safe|graham,File:Prawn Cracker.jpg,Gaurav Dhwaj Khadka,CC BY-SA 4.0,https://commons.wikimedia.org/wiki/File:Prawn_Cracker.jpg
 LZ-0049,dried apricots,apricot,tree|blossom|flower|jam,File:Ab food 04.jpg,Andrey Butko,CC BY-SA 3.0,https://commons.wikimedia.org/wiki/File:Ab_food_04.jpg
 LZ-0050,wafers,wafer,silicon|semiconductor|church|communion|host,File:2023 Wafle waniliowe Wawel bez dodatku cukru (2).jpg,Jacek Halicki,CC BY-SA 4.0,https://commons.wikimedia.org/wiki/File:2023_Wafle_waniliowe_Wawel_bez_dodatku_cukru_(2).jpg
-LZ-0051,plastic water bottle,water bottle|bottled water|plastic bottle|bottle of water,dispenser|purifier|cooler|filter|recycling|waste|litter|pollution,,,,
-LZ-0052,sparkling water glass,sparkling water|mineral water|soda water|carbonated water,factory|plant|spring|source|bottling|well,,,,
-LZ-0053,ayran,ayran|buttermilk|doogh|dugh|tan drink|lassi,pancake,,,,
+LZ-0051,plastic water bottle,water bottle|bottled water|plastic bottle|bottle of water,dispenser|purifier|cooler|filter|recycling|waste|litter|pollution,File:Water bottle (13779).jpg,Mukesh721,CC BY-SA 4.0,https://commons.wikimedia.org/wiki/File:Water_bottle_(13779).jpg
+LZ-0052,sparkling water glass,sparkling water|mineral water|soda water|carbonated water,factory|plant|spring|source|bottling|well,File:Sparkling Water with Mint in Glass Cup.jpg,Tony Webster,CC BY 2.0,https://commons.wikimedia.org/wiki/File:Sparkling_Water_with_Mint_in_Glass_Cup.jpg
+LZ-0053,ayran,ayran|buttermilk|doogh|dugh|tan drink|lassi,pancake,File:Naneli ayran - Dara.jpg,Hamdigumus,CC0,https://commons.wikimedia.org/wiki/File:Naneli_ayran_-_Dara.jpg
 LZ-0054,orange juice,orange juice,factory|plant,File:Orange juice 1 edit1.jpg,"Agency of the United States Department of Agriculture
 Edited Version by: Arad",Public domain,https://commons.wikimedia.org/wiki/File:Orange_juice_1_edit1.jpg
-LZ-0055,cola glass,cola|coke,skull|plant|nut|kola nut|kola tree|coca-cola zero|truck|sign|colander,,,,
-LZ-0056,lemonade,lemonade|soda|gazoz|soft drink|fizzy drink,baking soda|sodium|soda lake|ash|stand,,,,
-LZ-0057,loose black tea,tea leaves|black tea|loose tea|loose leaf|dried tea,plantation|field|bush|garden|picking|estate,,,,
+LZ-0055,cola glass,cola|coke,skull|plant|nut|kola nut|kola tree|coca-cola zero|truck|sign|colander,File:Coca Cola - Mexican death sentence.jpg,Tomascastelazo,CC BY-SA 4.0,https://commons.wikimedia.org/wiki/File:Coca_Cola_-_Mexican_death_sentence.jpg
+LZ-0056,lemonade,lemonade|soda|gazoz|soft drink|fizzy drink,baking soda|sodium|soda lake|ash|stand,File:Lemonade and teacup.jpg,Fumikas Sagisavas,CC0,https://commons.wikimedia.org/wiki/File:Lemonade_and_teacup.jpg
+LZ-0057,loose black tea,tea leaves|black tea|loose tea|loose leaf|dried tea,plantation|field|bush|garden|picking|estate,File:Black Tea sold in JianYang.JPG,PanShiBo,CC BY-SA 3.0,https://commons.wikimedia.org/wiki/File:Black_Tea_sold_in_JianYang.JPG
 LZ-0058,turkish coffee,coffee,plant|tree|cherry|plantation|shop|house,File:Roasted coffee beans.jpg,MarkSweep,Public domain,https://commons.wikimedia.org/wiki/File:Roasted_coffee_beans.jpg
-LZ-0059,instant coffee,instant coffee|coffee powder|coffee granules|soluble coffee,microscop|sem,,,,
-LZ-0060,dishwashing liquid,dishwashing liquid|dish soap|washing-up liquid|dishwashing detergent|dish detergent,machine,,,,
+LZ-0059,instant coffee,instant coffee|coffee powder|coffee granules|soluble coffee,microscop|sem,File:From coffee bean to instant coffee 01.jpg,Heiti Paves,CC BY 4.0,https://commons.wikimedia.org/wiki/File:From_coffee_bean_to_instant_coffee_01.jpg
+LZ-0060,dishwashing liquid,dishwashing liquid|dish soap|washing-up liquid|dishwashing detergent|dish detergent,machine,"File:Jaam dishwashing liquid ad- Zan-e Rooz cover, Issue 700 - 7 October 1978.jpg",Zan-e Rooz,Public domain,"https://commons.wikimedia.org/wiki/File:Jaam_dishwashing_liquid_ad-_Zan-e_Rooz_cover,_Issue_700_-_7_October_1978.jpg"
 LZ-0061,dishwasher tablets,dishwasher tablet|dishwasher detergent|dishwasher tab,,File:Spülmaschinentabs dishwasher detergent tablets 2434.jpg,Elke Wetzig,CC BY-SA 4.0,https://commons.wikimedia.org/wiki/File:Sp%C3%BClmaschinentabs_dishwasher_detergent_tablets_2434.jpg
-LZ-0062,laundry powder,washing powder|laundry powder|laundry detergent|detergent powder|powdered detergent,store|shop|shelf|supermarket,,,,
+LZ-0062,laundry powder,washing powder|laundry powder|laundry detergent|detergent powder|powdered detergent,store|shop|shelf|supermarket,File:Plastic spoon n Laundry detergent n Washing powder in white.jpg,Lebacno,CC BY-SA 3.0,https://commons.wikimedia.org/wiki/File:Plastic_spoon_n_Laundry_detergent_n_Washing_powder_in_white.jpg
 LZ-0063,liquid laundry detergent,laundry detergent|liquid detergent|detergent pod|laundry pod,store|shop|shelf|supermarket,File:Laundry detergent pods.jpg,ajcespedes,CC0,https://commons.wikimedia.org/wiki/File:Laundry_detergent_pods.jpg
-LZ-0064,fabric softener,fabric softener|fabric conditioner|softener,store|shop|shelf|supermarket|water softener,,,,
-LZ-0065,bleach bottle,bleach|javel|chlorine bleach,hair|teeth|coral|tooth|bleached,,,,
+LZ-0064,fabric softener,fabric softener|fabric conditioner|softener,store|shop|shelf|supermarket|water softener,"File:Globus Saarbrücken, fabric softener pic7.JPG",Alf van Beem,Public domain,"https://commons.wikimedia.org/wiki/File:Globus_Saarbr%C3%BCcken,_fabric_softener_pic7.JPG"
+LZ-0065,bleach bottle,bleach|javel|chlorine bleach,hair|teeth|coral|tooth|bleached,File:HK Kao Bleaches 2.JPG,Meadohsum,CC BY-SA 3.0,https://commons.wikimedia.org/wiki/File:HK_Kao_Bleaches_2.JPG
 LZ-0066,spray bottle,spray bottle|cleaning spray|trigger spray,paint|graffiti|perfume|pepper,File:SPRAY BOTTLE.jpg,Kaviyadharshini Selvakumar,CC BY-SA 4.0,https://commons.wikimedia.org/wiki/File:SPRAY_BOTTLE.jpg
 LZ-0067,toilet paper rolls,toilet paper|toilet roll|bathroom tissue,art|sculpture,"File:Stacked rolls of toilet paper, Tunnicliff's Tavern.jpg",Ser Amantio di Nicolao,CC BY-SA 4.0,"https://commons.wikimedia.org/wiki/File:Stacked_rolls_of_toilet_paper,_Tunnicliff%27s_Tavern.jpg"
 LZ-0068,paper towels,paper towel|kitchen roll|kitchen paper,dispenser,File:Roll of Paper Towels.jpg,MrBeastRapper,CC BY-SA 4.0,https://commons.wikimedia.org/wiki/File:Roll_of_Paper_Towels.jpg
-LZ-0069,black garbage bags,garbage bag|trash bag|bin bag|rubbish bag|refuse sack|bin liner,forest|street|dump|pile|litter|landfill|beach|road|sidewalk|collection,,,,
-LZ-0070,shampoo bottle,shampoo,dog|horse|car|carpet|salon,,,,
-LZ-0071,hair conditioner,hair conditioner|conditioner,air conditioner|air conditioning|air-conditioner|unit|condenser,,,,
-LZ-0072,shower gel,shower gel|body wash|bath gel|douchegel|duschgel,shower head|bathroom,,,,
-LZ-0073,liquid soap,liquid soap|soap dispenser|hand soap|hand wash|soap pump,bar of soap|soap bar|soap opera|nut,,,,
+LZ-0069,black garbage bags,garbage bag|trash bag|bin bag|rubbish bag|refuse sack|bin liner,forest|street|dump|pile|litter|landfill|beach|road|sidewalk|collection,File:Black garbage bag.jpg,Wiki Farazi,Public domain,https://commons.wikimedia.org/wiki/File:Black_garbage_bag.jpg
+LZ-0070,shampoo bottle,shampoo,dog|horse|car|carpet|salon,File:Dove shampoo bottle in black background.jpg,Ranjima np,CC0,https://commons.wikimedia.org/wiki/File:Dove_shampoo_bottle_in_black_background.jpg
+LZ-0071,hair conditioner,hair conditioner|conditioner,air conditioner|air conditioning|air-conditioner|unit|condenser,"File:Hair shampoos, conditioners and other hair care products in liter bottles for use in hair salon.jpg",Pittigrilli,CC BY-SA 4.0,"https://commons.wikimedia.org/wiki/File:Hair_shampoos,_conditioners_and_other_hair_care_products_in_liter_bottles_for_use_in_hair_salon.jpg"
+LZ-0072,shower gel,shower gel|body wash|bath gel|douchegel|duschgel,shower head|bathroom,File:Kenvue shower gel with a complicated story to tell.jpg,Retired electrician,Public domain,https://commons.wikimedia.org/wiki/File:Kenvue_shower_gel_with_a_complicated_story_to_tell.jpg
+LZ-0073,liquid soap,liquid soap|soap dispenser|hand soap|hand wash|soap pump,bar of soap|soap bar|soap opera|nut,"File:Liquid soap with shortleaf pine, eastern red cedar, and fir.jpg",Spoingus101,CC0,"https://commons.wikimedia.org/wiki/File:Liquid_soap_with_shortleaf_pine,_eastern_red_cedar,_and_fir.jpg"
 LZ-0074,toothpaste,toothpaste,art,File:Toothpasteonbrush.jpg,Thegreenj,CC BY-SA 3.0,https://commons.wikimedia.org/wiki/File:Toothpasteonbrush.jpg
 LZ-0075,toothbrushes,toothbrush,tree|plant,File:Toothbrush x3 20050716 002.jpg,Jonas Bergsten,Public domain,https://commons.wikimedia.org/wiki/File:Toothbrush_x3_20050716_002.jpg
-LZ-0076,deodorant,deodorant|antiperspirant|deo stick|roll-on,,,,,
-LZ-0077,shaving cream,shaving cream|shaving foam|shaving soap|shaving gel|shave cream,machine|razor blade factory,,,,
-LZ-0078,cotton wool balls,cotton ball|cotton wool|cotton pad|cotton balls,plant|field|boll|harvest|mill|gin,,,,
-LZ-0079,disposable diapers,diaper|diapers|nappy|nappies|windel,cloth diaper|adult|forest|litter|street,,,,
-LZ-0080,diapers,diaper|diapers|nappy|nappies|windel,adult|forest|litter|street,,,,
+LZ-0076,deodorant,deodorant|antiperspirant|deo stick|roll-on,,File:Natural Deodorant image.jpg,LoneKauriRoad,CC BY-SA 4.0,https://commons.wikimedia.org/wiki/File:Natural_Deodorant_image.jpg
+LZ-0077,shaving cream,shaving cream|shaving foam|shaving soap|shaving gel|shave cream,machine|razor blade factory,"File:Shaving software pics 011, Mühle Pinsel Sandalwood shaving cream (383447787).jpg",Shagun,CC BY 2.0,"https://commons.wikimedia.org/wiki/File:Shaving_software_pics_011,_M%C3%BChle_Pinsel_Sandalwood_shaving_cream_(383447787).jpg"
+LZ-0078,cotton wool balls,cotton ball|cotton wool|cotton pad|cotton balls,plant|field|boll|harvest|mill|gin,File:Espostoa lanata 'Cotton Ball Cactus' (Cactaceae).JPG,Magnus Manske,CC BY-SA 2.5,https://commons.wikimedia.org/wiki/File:Espostoa_lanata_%27Cotton_Ball_Cactus%27_(Cactaceae).JPG
+LZ-0079,disposable diapers,diaper|diapers|nappy|nappies|windel,cloth diaper|adult|forest|litter|street,File:Preschooler in Size 4 Pampers Baby Dry Disposable Diaper 1.jpg,ParentingPatch,CC BY-SA 4.0,https://commons.wikimedia.org/wiki/File:Preschooler_in_Size_4_Pampers_Baby_Dry_Disposable_Diaper_1.jpg
+LZ-0080,diapers,diaper|diapers|nappy|nappies|windel,adult|forest|litter|street,File:Diapers (5137580773).jpg,Joel Kramer,CC BY 2.0,https://commons.wikimedia.org/wiki/File:Diapers_(5137580773).jpg
 LZ-0081,baby wipes,wet wipe|baby wipe|wipes,car,File:Baby wipes.jpg,Headlock0225,CC BY 4.0,https://commons.wikimedia.org/wiki/File:Baby_wipes.jpg
-LZ-0082,baby shampoo,baby shampoo|baby bath|baby wash|baby care|shampoo,dog|horse|salon,,,,
-LZ-0083,zinc oxide ointment,diaper rash|nappy rash|zinc oxide|zinc ointment|barrier cream|nappy cream|ointment,ice|cake|sandwich|cookie,,,,
-LZ-0084,baby food,baby food|baby cereal|infant cereal|baby porridge|rice porridge|porridge,jar of|advert,,,,
-LZ-0085,baby bottle,baby bottle|feeding bottle|nursing bottle|biberon|babyflasche,warmer|sterilizer|steriliser|museum,,,,
-LZ-0086,body lotion,lotion|moisturizer|moisturiser|hand cream|body cream,advert|suntan|sunscreen,,,,
+LZ-0082,baby shampoo,baby shampoo|baby bath|baby wash|baby care|shampoo,dog|horse|salon,File:Baby Shampoo (50841206943).jpg,ajay_suresh,CC BY 2.0,https://commons.wikimedia.org/wiki/File:Baby_Shampoo_(50841206943).jpg
+LZ-0083,zinc oxide ointment,diaper rash|nappy rash|zinc oxide|zinc ointment|barrier cream|nappy cream|ointment,ice|cake|sandwich|cookie,File:Zinc oxide ointment.jpg,Benff,CC BY 4.0,https://commons.wikimedia.org/wiki/File:Zinc_oxide_ointment.jpg
+LZ-0084,baby food,baby food|baby cereal|infant cereal|baby porridge|rice porridge|porridge,jar of|advert,File:Baby eating baby food.jpg,Ravedave,CC BY-SA 3.0,https://commons.wikimedia.org/wiki/File:Baby_eating_baby_food.jpg
+LZ-0085,baby bottle,baby bottle|feeding bottle|nursing bottle|biberon|babyflasche,warmer|sterilizer|steriliser|museum,"File:Infant feeding bottle, Castledyke Cemetery.jpg",Lajmmoore,CC BY-SA 4.0,"https://commons.wikimedia.org/wiki/File:Infant_feeding_bottle,_Castledyke_Cemetery.jpg"
+LZ-0086,body lotion,lotion|moisturizer|moisturiser|hand cream|body cream,advert|suntan|sunscreen,File:Lea & Perrins lotion for growth of hair.jpg,Lea & Perrins or those who managed their advertisements,Public domain,https://commons.wikimedia.org/wiki/File:Lea_%26_Perrins_lotion_for_growth_of_hair.jpg
