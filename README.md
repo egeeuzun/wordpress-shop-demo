@@ -119,7 +119,7 @@ CI/CD: GitHub → CodeBuild → CodePipeline → ECR → ECS
 ├── docker/                  # Entrypoint, PHP settings, health check, drop-in patch, language packs
 ├── wp-config/wp-config.php  # Env-based WordPress config
 ├── wp-content/
-│   ├── themes/shopdemo/     # Custom Storefront child theme
+│   ├── themes/shopdemo/     # Storefront child theme: modern grocery layout, system fonts only
 │   └── mu-plugins/          # S3 auto-activation, CDN redirect, XML-RPC off, store rules (offline payments, TCKN)
 ├── seed/                    # Demo data kit baked into the image (/usr/src/shop-seed)
 │   ├── products.csv         # 86 grocery products (WooCommerce CSV importer format)
