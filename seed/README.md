@@ -10,8 +10,7 @@ IDs) is what the Residency Guard checks later look for.
 | `seed.php` | The script that sets up the store and creates the products, customers and orders. |
 
 The kit is built into the image at `/usr/src/shop-seed/` (outside the web root)
-and runs with WP-CLI inside the container. It needs no API keys and makes no
-outbound requests.
+and runs with WP-CLI inside the container. It needs no API keys.
 
 ## Ground rules
 
@@ -19,9 +18,10 @@ outbound requests.
   All e-mails end in `@example.com`, a domain reserved for examples.
 - **National IDs (TCKN) are fake.** They are random 11-digit numbers that pass
   the checksum rule, so the checkout accepts them. They do not belong to anyone.
-- **No real brands or photos.** Products have generic names like
-  "Tam Yağlı Süt 1 L" (whole milk, 1 L). Each category gets a plain coloured
-  placeholder image.
+- **No real brands.** Products have generic names like
+  "Tam Yağlı Süt 1 L" (whole milk, 1 L). Category/product images use real stock
+  photos when reachable; if download fails, the seed falls back to plain coloured
+  placeholders.
 - **No real payments.** Only Cash on Delivery and Bank Transfer are offered, and
   the bank account (IBAN) shown is invalid on purpose.
 - **No e-mails are sent** while the script runs.
@@ -59,7 +59,7 @@ Options are written as `name=value` (WP-CLI's `eval-file` does not accept
 | `orders=N` | `300` | Number of orders, spread over the last 90 days. |
 | `customers=N` | `150` | Number of registered customers. About 15% of orders are guest orders. |
 | `seed=N` | `2026` | Random seed. The same seed always gives the same customers and orders. |
-| `no-images` | — | Skip the placeholder images. |
+| `no-images` | — | Skip category images (both remote photos and fallback placeholders). |
 | `reset-stock` | — | Set existing products' stock back to the CSV values. |
 | `customer-pass=…` | `demo123` | Password for the demo customer account. |
 | `csv=/path` | `products.csv` | Use a different product file. |
