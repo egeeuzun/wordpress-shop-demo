@@ -9,6 +9,8 @@ Kullanım:
     python3 scripts/fetch-photos.py                  # fotoğrafı olmayan ürünler
     python3 scripts/fetch-photos.py LZ-0001 LZ-0042  # yalnızca bu ürünler (yeniden)
     python3 scripts/fetch-photos.py --all            # hepsi (yeniden)
+    python3 scripts/fetch-photos.py --check          # indirmeden, repodaki fotoğrafları
+                                                     # uygunsuz içerik filtresinden geçirir
 
 Her çalıştırmadan sonra seed/photos/review.html oluşur: bütün ürünler ve
 fotoğrafları tek sayfada (git'e girmez).
@@ -62,6 +64,15 @@ NOT_A_PHOTO = (
     "advert", "wellcome", "museum", "manga", "screenshot", "logo", "diagram", "cartoon",
     "comic", "scan", "postcard", "stamp", "map of", "apollo", "nasa", "microscop", "sem image",
 )
+# Uygunsuz içerik: dosya başlığında ya da Commons kategorilerinde geçerse asla seçilmez.
+# Kategori kontrolü asıl güvencedir; başlık masum olsa bile Commons dosyayı
+# "Nude ...", "Erotic ..." gibi kategorilere koyar.
+UNSAFE = (
+    "nude", "nudity", "naked", "erotic", "porn", "nsfw", "sexual", "sex ", "sex toy", "topless",
+    "bare breast", "breasts", "lingerie", "bikini", "underwear", "fetish", "bdsm", "genital",
+    "penis", "vagina", "vulva", "condom", "strip club", "stripper", "playboy", "hentai",
+    "gore", "corpse", "dead body", "injur", "wound", "blood",
+)
 
 
 # --- Commons -------------------------------------------------------------------
@@ -76,7 +87,9 @@ def api(params):
 
 
 IMAGEINFO = {
-    "prop": "imageinfo",
+    "prop": "imageinfo|categories",
+    "clshow": "!hidden",
+    "cllimit": "max",
     "iiprop": "url|size|mime|extmetadata",
     "iiurlwidth": WIDTH,
     "iiextmetadatafilter": "LicenseShortName|Artist",
@@ -112,6 +125,8 @@ def candidate(page, keywords, exclude):
         return None
     if any(has(t, x) for x in exclude) or any(has(t, x) for x in NOT_A_PHOTO):
         return None
+    if not safe(page):
+        return None
     ii = (page.get("imageinfo") or [{}])[0]
     if ii.get("mime") != "image/jpeg" or not ii.get("thumburl"):
         return None
@@ -129,6 +144,13 @@ def candidate(page, keywords, exclude):
         "source_url": ii.get("descriptionurl", ""),
         "thumb": ii["thumburl"],
     }
+
+
+def safe(page):
+    """Başlıkta ya da kategorilerde uygunsuz içerik işareti yoksa True."""
+    texts = [title_text(page.get("title", ""))]
+    texts += [c.get("title", "").lower().replace("_", " ") for c in page.get("categories", [])]
+    return not any(has(t, w) for t in texts for w in UNSAFE)
 
 
 def search_pages(text):
@@ -227,6 +249,22 @@ def write_review(rows, names):
 
 # --- Ana akış --------------------------------------------------------------------
 
+def check(rows, names):
+    """Repodaki Commons fotoğraflarını uygunsuz içerik filtresinden geçirir."""
+    bad = []
+    for row in rows:
+        if not row["file"]:
+            continue
+        data = api({"action": "query", "titles": row["file"], "prop": "categories", "clshow": "!hidden", "cllimit": "max"})
+        pages = data.get("query", {}).get("pages", [])
+        if pages and not safe(pages[0]):
+            bad.append(row["sku"])
+            print(f"{row['sku']}: {names.get(row['sku'], '')} <- {row['file']} UYGUNSUZ olabilir")
+    print(f"\nKontrol edilen: {sum(1 for r in rows if r['file'])}, sorunlu: {len(bad)} {' '.join(bad)}")
+    if bad:
+        print("Sorunlu fotoğrafları silip `file`'ı boşaltın, sonra betiği o SKU'larla çalıştırın.")
+
+
 def main():
     args = sys.argv[1:]
     refetch_all = "--all" in args
@@ -235,6 +273,10 @@ def main():
     rows = read_manifest()
     with open(CATALOG, newline="", encoding="utf-8") as f:
         names = {r["SKU"]: r["Name"] for r in csv.DictReader(f)}
+
+    if "--check" in args:
+        check(rows, names)
+        return
 
     used = {r["file"] for r in rows if r["file"]}
     done, failed = 0, []

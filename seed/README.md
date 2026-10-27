@@ -148,6 +148,10 @@ python3 scripts/fetch-photos.py            # products that have no photo yet
 python3 scripts/fetch-photos.py LZ-0042    # just these products, again
 ```
 
+To check the photos already in the repo against the same appropriateness
+filter without downloading anything, run
+`python3 scripts/fetch-photos.py --check`.
+
 When it finishes it writes `seed/photos/review.html`, a single page showing
 every product with its photo. Git ignores this file.
 
@@ -160,6 +164,9 @@ The script only picks a photo when all of these hold:
   words, such as "air" for hair conditioner or "forest" for bin bags.
 - **It is a photo.** Paintings, posters, adverts, screenshots, logos and
   similar files are skipped for every product.
+- **It is appropriate.** No nudity, erotic or sexual content, gore or injuries.
+  The script checks the file title and also the file's Commons categories, so
+  a harmless-looking title in a category such as "Nude …" is still skipped.
 - **It is free to use.** The licence is CC0, public domain, CC BY or CC BY-SA.
 - **It is the right shape.** A JPEG, large enough and close to square.
 - **It is not taken.** No other product uses the same photo.
