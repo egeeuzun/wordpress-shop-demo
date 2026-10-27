@@ -7,3 +7,5 @@ imagedefinitions.json
 *.jpeg
 # Ürün fotoğrafları repoda tutulur (seed/photos, bkz. seed/README.md)
 !seed/photos/*.jpg
+!seed/photos/*.jpeg
+!seed/photos/*.png

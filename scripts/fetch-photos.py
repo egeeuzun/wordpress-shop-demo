@@ -42,6 +42,12 @@ CATALOG = os.path.join(ROOT, "seed", "products.csv")
 FIELDS = ["sku", "query", "pexels_id", "photographer", "photographer_url", "source_url"]
 API = "https://api.pexels.com/v1"
 SIZE = 1000  # kare, piksel
+EXTS = ("jpg", "jpeg", "png", "webp")
+
+
+def has_photo(sku):
+    """Elle konmuş fotoğraf (png/webp...) da sayılır; üzerine indirme yapılmaz."""
+    return any(os.path.exists(os.path.join(PHOTOS, f"{sku}.{e}")) for e in EXTS)
 
 
 def api(path, key):
@@ -84,7 +90,7 @@ def main():
     for row in rows:
         sku = row["sku"]
         dest = os.path.join(PHOTOS, f"{sku}.jpg")
-        wanted = refetch_all or sku in only or (not only and not os.path.exists(dest))
+        wanted = refetch_all or sku in only or (not only and not has_photo(sku))
         if not wanted:
             continue
         try:
@@ -120,7 +126,7 @@ def main():
         w.writeheader()
         w.writerows(rows)
 
-    missing = [r["sku"] for r in rows if not os.path.exists(os.path.join(PHOTOS, f"{r['sku']}.jpg"))]
+    missing = [r["sku"] for r in rows if not has_photo(r["sku"])]
     print(f"\nİndirilen: {done}, hata: {failed}, fotoğrafı olmayan: {len(missing)} {' '.join(missing)}")
     print("Kontrol: ./scripts/seed-demo.sh ile mağazaya yükleyip bakın; beğenmediklerinizi değiştirip commit'leyin.")
 

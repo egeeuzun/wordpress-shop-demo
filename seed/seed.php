@@ -549,8 +549,19 @@ function lzseed_is_seed_image(int $id): bool
     return false;
 }
 
+/** seed/photos/<SKU>.(jpg|jpeg|png|webp): elle konan fotoğraflar da olur. */
+function lzseed_find_photo(string $dir, string $sku): ?string
+{
+    foreach (['jpg', 'jpeg', 'png', 'webp'] as $ext) {
+        if (is_file("$dir/$sku.$ext")) {
+            return "$dir/$sku.$ext";
+        }
+    }
+    return null;
+}
+
 /**
- * seed/photos/<SKU>.jpg dosyasını medya kütüphanesine yükler ya da daha önce
+ * seed/photos/<SKU>.* dosyasını medya kütüphanesine yükler ya da daha önce
  * yüklenmiş aynı dosyayı döndürür. Dosya değiştiyse yeniden yüklenir, eskisi
  * silinir. İnternete çıkmaz: fotoğraflar repoda durur (scripts/fetch-photos.py).
  */
@@ -569,7 +580,8 @@ function lzseed_product_photo(string $sku, string $path, string $title, array $c
     // media_handle_sideload dosyayı taşıdığı için kopyası yüklenir
     $tmp = wp_tempnam(basename($path));
     copy($path, $tmp);
-    $id = media_handle_sideload(['name' => strtolower($sku) . '.jpg', 'tmp_name' => $tmp], 0, $title);
+    $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+    $id  = media_handle_sideload(['name' => strtolower($sku) . ".$ext", 'tmp_name' => $tmp], 0, $title);
     if (is_wp_error($id)) {
         @unlink($tmp);
         WP_CLI::warning("Fotoğraf yüklenemedi ($sku): " . $id->get_error_message());
@@ -623,7 +635,7 @@ function lzseed_category_placeholder(string $name): int
 
 /**
  * Ürün ve kategori görselleri:
- *  - seed/photos/<SKU>.jpg varsa ürünün kendi fotoğrafı olur.
+ *  - seed/photos/<SKU>.jpg (ya da .jpeg/.png/.webp) varsa ürünün kendi fotoğrafı olur.
  *  - Kategori kapağı, kategorideki ilk fotoğraflı ürünün fotoğrafıdır; hiç yoksa düz renk.
  *  - Fotoğrafı olmayan ürün kategori kapağını kullanır.
  *  - Elle değiştirilmiş ürün görselleri korunur.
@@ -644,8 +656,8 @@ function lzseed_apply_images(array $catalog, array $products, array $categories,
 
     $photos = [];
     foreach ($catalog as $sku => $row) {
-        $path = "$dir/$sku.jpg";
-        if (is_file($path)) {
+        $path = lzseed_find_photo($dir, $sku);
+        if ($path !== null) {
             $photos[$sku] = lzseed_product_photo($sku, $path, $row['Name'], $credits[$sku] ?? []);
             if (count($photos) % 10 === 0) {
                 WP_CLI::log('    fotoğraflar: ' . count($photos));

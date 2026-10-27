@@ -112,8 +112,10 @@ the product unit. Customers, orders and store settings still need `seed.php`.
 
 ## Product photos
 
-Every product has its own photo, `seed/photos/<SKU>.jpg` (1000×1000 JPEG). The
-photos live in the repo, so the seed never downloads anything.
+Every product has its own photo in `seed/photos/`, named after its SKU
+(`LZ-0001.jpg`…). The photos are part of the repo and the Docker image, so the
+store gets them with no setup: no API key, no download. The seed never goes
+online.
 
 - **Product image:** the product's own photo.
 - **Category image:** the photo of the first product in that category.
@@ -123,44 +125,35 @@ photos live in the repo, so the seed never downloads anything.
   replaced.
 - **Re-running:** a photo is uploaded again only when its file changes.
 
-### Where the photos come from
+### Adding or replacing a photo
 
-They are from [Pexels](https://www.pexels.com/). The
-[Pexels license](https://www.pexels.com/license/) allows free use, including
-commercial use, and needs no credit. We still record the photographer: in
-`seed/photos/manifest.csv`, and as the image caption in the media library.
+Put the file in `seed/photos/` with the product's SKU as its name: `.jpg`,
+`.jpeg`, `.png` or `.webp`. A square photo of about 1000×1000 works best; the
+theme crops to a square anyway. Then run `./scripts/seed-demo.sh` (locally the
+`seed` folder is mounted, so no rebuild) and commit the file.
 
-`manifest.csv` has one row per product:
+Use only photos you are allowed to use (for example [Pexels](https://www.pexels.com/license/)
+or [Unsplash](https://unsplash.com/license)), and none that show a brand or
+logo. Add the credit to `seed/photos/manifest.csv` if you have it; the seed
+shows the photographer as the image caption.
 
-| Column | What it is |
-| --- | --- |
-| `query` | The Pexels search used for this product. |
-| `pexels_id` | The chosen photo. The number at the end of its Pexels page address. |
-| `photographer`, `photographer_url`, `source_url` | Credit, filled in by the script. |
+### Optional: bulk download from Pexels (maintainers only)
 
-### Fetching or changing photos
+`scripts/fetch-photos.py` fills `seed/photos/` from Pexels in one go. It is a
+tool for whoever maintains the photo set. Nobody needs it to run the store.
 
-`scripts/fetch-photos.py` downloads the photos. It needs a free Pexels API key
-(<https://www.pexels.com/api/>) and runs anywhere with Python 3 and internet
-access, for example a Codespace:
+It needs a free Pexels API key (<https://www.pexels.com/api/>):
 
 ```bash
 export PEXELS_API_KEY=...
 python3 scripts/fetch-photos.py            # products that have no photo yet
 python3 scripts/fetch-photos.py LZ-0042    # just these products, again
-python3 scripts/fetch-photos.py --all      # everything, again
 ```
 
-If a row has a `pexels_id`, the script downloads that exact photo. If not, it
-searches with `query` and takes the first result that no other product is
-using.
+For each product, `manifest.csv` holds the search query (`query`) and the
+chosen photo (`pexels_id`). If a row has a `pexels_id`, the script downloads
+that exact photo. If not, it searches with `query` and takes the first result
+that no other product is using.
 
-To replace a photo you don't like:
-
-1. In `manifest.csv`, either write the number of a photo you like on Pexels
-   into `pexels_id`, or clear `pexels_id` and change `query`.
-2. Run the script with that SKU.
-
-Then run `./scripts/seed-demo.sh` to load the photos into the store. Check them
-on the site, and commit the photos together with `manifest.csv`. Don't use
-photos that show a brand or logo.
+Check the result in the store, then commit the photos together with
+`manifest.csv`.
