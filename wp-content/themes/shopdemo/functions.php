@@ -210,5 +210,10 @@ add_filter('storefront_copyright_text', function () {
 });
 add_filter('storefront_credit_links_output', function ($links) {
     $notice = '<span class="shopdemo-demo-notice">Ürünler, fiyatlar ve müşteri verileri sentetiktir.</span>';
+    // Seed fotoğraf atıflarını bu sayfaya yazar (CC BY lisansları atıf ister)
+    $credits = get_page_by_path('gorsel-kaynaklari');
+    if ($credits && $credits->post_status === 'publish') {
+        $notice .= sprintf(' <a class="shopdemo-credits-link" href="%s">Görsel kaynakları</a>', esc_url(get_permalink($credits)));
+    }
     return $links === '' ? $notice : $links . ' ' . $notice;
 });

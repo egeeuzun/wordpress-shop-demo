@@ -1124,6 +1124,17 @@ body.shopdemo .site-footer .site-info {
     color: var(--sd-yellow);
 }
 
+body.shopdemo .site-footer a.shopdemo-credits-link {
+    color: #fff;
+    text-decoration: underline;
+    margin-left: 6px;
+}
+
+.shopdemo-credits {
+    font-size: 14px;
+    line-height: 1.7;
+}
+
 /* Mobil alt çubuk */
 body.shopdemo .storefront-handheld-footer-bar {
     background: #fff;

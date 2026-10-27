@@ -512,7 +512,7 @@ function lzseed_apply_categories(array $catalog): array
     return $map;
 }
 
-/** seed/photos/manifest.csv: SKU => [query, pexels_id, photographer, photographer_url, source_url] */
+/** seed/photos/manifest.csv: SKU => [query, file, author, license, source_url] */
 function lzseed_read_photo_credits(string $dir): array
 {
     $file = "$dir/manifest.csv";
@@ -590,14 +590,59 @@ function lzseed_product_photo(string $sku, string $path, string $title, array $c
     update_post_meta($id, '_lz_photo', $sku);
     update_post_meta($id, '_lz_photo_hash', $hash);
     update_post_meta($id, '_wp_attachment_image_alt', $title);
-    if (!empty($credit['photographer'])) {
-        wp_update_post(['ID' => $id, 'post_excerpt' => sprintf('Fotoğraf: %s / Pexels', $credit['photographer'])]);
+    if (!empty($credit['author'])) {
+        wp_update_post(['ID' => $id, 'post_excerpt' => lzseed_photo_caption($credit)]);
         update_post_meta($id, '_lz_photo_source', $credit['source_url'] ?? '');
     }
     if ($old) {
         wp_delete_attachment($old, true);
     }
     return (int) $id;
+}
+
+/** "Fotoğraf: Yazar (CC BY-SA 4.0, Wikimedia Commons)" */
+function lzseed_photo_caption(array $credit): string
+{
+    $origin = str_contains($credit['source_url'] ?? '', 'wikimedia.org') ? ', Wikimedia Commons' : '';
+    $lic    = trim(($credit['license'] ?? '') . $origin, ', ');
+    return 'Fotoğraf: ' . $credit['author'] . ($lic !== '' ? " ($lic)" : '');
+}
+
+/**
+ * "Görsel kaynakları" sayfası: her ürün fotoğrafının yazarı, lisansı ve
+ * kaynağı. CC BY / CC BY-SA lisansları atıf ister; footer bu sayfaya bağlanır.
+ */
+function lzseed_apply_credits_page(array $catalog, array $credits): void
+{
+    $items = '';
+    foreach ($catalog as $sku => $row) {
+        $c = $credits[$sku] ?? [];
+        if (empty($c['author'])) {
+            continue;
+        }
+        $items .= sprintf(
+            "<li><strong>%s</strong> — %s, %s. <a href=\"%s\" rel=\"nofollow noopener\">Kaynak</a></li>\n",
+            esc_html($row['Name']),
+            esc_html($c['author']),
+            esc_html($c['license'] ?: 'lisans belirtilmemiş'),
+            esc_url($c['source_url'] ?? '')
+        );
+    }
+    $page = get_page_by_path('gorsel-kaynaklari');
+    if ($items === '') {
+        return;
+    }
+    $content = "<!-- wp:paragraph --><p>Bu demo mağazadaki ürün fotoğrafları serbest lisanslıdır. "
+        . "Ürünler ve fotoğraflar arasında gerçek bir marka ilişkisi yoktur.</p><!-- /wp:paragraph -->\n"
+        . "<!-- wp:html --><ul class=\"shopdemo-credits\">\n$items</ul><!-- /wp:html -->";
+    $data = ['post_type' => 'page', 'post_status' => 'publish', 'post_title' => 'Görsel kaynakları',
+        'post_name' => 'gorsel-kaynaklari', 'post_content' => $content];
+    if ($page) {
+        $data['ID'] = $page->ID;
+        wp_update_post($data);
+    } else {
+        wp_insert_post($data);
+    }
 }
 
 /** Hiç fotoğrafı olmayan kategori için düz renkli yedek görsel (bir kez üretilir). */
@@ -695,6 +740,8 @@ function lzseed_apply_images(array $catalog, array $products, array $categories,
             $stats['images_set']++;
         }
     }
+
+    lzseed_apply_credits_page($catalog, $credits);
 
     // Picsum'dan gelen eski rastgele fotoğraflar artık hiçbir yerde kullanılmıyor
     $stale = get_posts([

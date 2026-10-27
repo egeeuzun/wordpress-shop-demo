@@ -132,28 +132,44 @@ Put the file in `seed/photos/` with the product's SKU as its name: `.jpg`,
 theme crops to a square anyway. Then run `./scripts/seed-demo.sh` (locally the
 `seed` folder is mounted, so no rebuild) and commit the file.
 
-Use only photos you are allowed to use (for example [Pexels](https://www.pexels.com/license/)
-or [Unsplash](https://unsplash.com/license)), and none that show a brand or
-logo. Add the credit to `seed/photos/manifest.csv` if you have it; the seed
-shows the photographer as the image caption.
+Use only photos you are allowed to use, and none that show a brand or logo.
+If the licence asks for credit, add a row to `seed/photos/manifest.csv`
+(`author`, `license`, `source_url`). The seed then shows the credit as the
+image caption and on the **Görsel kaynakları** page.
 
-### Optional: bulk download from Pexels (maintainers only)
+### Filling the folder in one go (maintainers only)
 
-`scripts/fetch-photos.py` fills `seed/photos/` from Pexels in one go. It is a
-tool for whoever maintains the photo set. Nobody needs it to run the store.
-
-It needs a free Pexels API key (<https://www.pexels.com/api/>):
+`scripts/fetch-photos.py` downloads a photo for every product from
+[Wikimedia Commons](https://commons.wikimedia.org/). It needs no account or API
+key, only Python 3 and internet access:
 
 ```bash
-export PEXELS_API_KEY=...
 python3 scripts/fetch-photos.py            # products that have no photo yet
 python3 scripts/fetch-photos.py LZ-0042    # just these products, again
 ```
 
-For each product, `manifest.csv` holds the search query (`query`) and the
-chosen photo (`pexels_id`). If a row has a `pexels_id`, the script downloads
-that exact photo. If not, it searches with `query` and takes the first result
-that no other product is using.
+It only picks freely licensed photos that may be used commercially: CC0,
+public domain, CC BY and CC BY-SA. Each photo must be a large enough JPEG and
+close to square. A hand-placed photo is never overwritten unless you name its
+SKU.
+
+For each product, `manifest.csv` holds:
+
+| Column | What it is |
+| --- | --- |
+| `query` | The search used for this product. |
+| `file` | The chosen Commons file, for example `File:Tomatoes.jpg`. |
+| `author`, `license`, `source_url` | Credit, filled in by the script. |
+
+If `file` is set, the script downloads that exact file. If not, it searches
+with `query` and takes the first suitable result that no other product uses.
+
+To replace a photo, put the name of a file you like on Commons into `file`, or
+clear `file` and change `query`. Then run the script with that SKU.
+
+CC BY and CC BY-SA require credit. The seed shows the author and licence as
+the image caption, and lists every photo on a **Görsel kaynakları** (image
+credits) page linked from the footer.
 
 Check the result in the store, then commit the photos together with
 `manifest.csv`.
