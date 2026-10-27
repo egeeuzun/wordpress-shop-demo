@@ -48,6 +48,12 @@ UA = "yerel-market-seed/1.0 (WooCommerce demo; https://github.com/egeeuzun/wordp
 WIDTH = 960  # Commons'un standart küçük resim boyutlarından biri
 EXTS = ("jpg", "jpeg", "png", "webp")
 FREE = re.compile(r"^(cc0|public domain|pd\b.*|cc by(-sa)? \d(\.\d)?.*)$", re.I)
+# Ürün fotoğrafı olmayan sonuçlar: tablo, gravür, reklam, ekran görüntüsü...
+NOT_PHOTO = re.compile(
+    r"painting|drawing|illustration|engraving|lithograph|etching|poster|advert|wellcome|"
+    r"museum|manga|screenshot|logo|label|diagram|map\b|scan|apollo|nasa|cartoon|comic",
+    re.I,
+)
 
 
 def get_json(params):
@@ -78,6 +84,8 @@ def usable(page):
         return None
     w, h = ii.get("width", 0), ii.get("height", 0)
     if w < 800 or h < 600 or not (0.6 <= w / max(h, 1) <= 1.8):
+        return None
+    if NOT_PHOTO.search(page["title"]):
         return None
     meta = ii.get("extmetadata", {})
     lic = plain(meta.get("LicenseShortName", {}).get("value"))
