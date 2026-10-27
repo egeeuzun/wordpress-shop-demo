@@ -1,30 +1,34 @@
 #!/usr/bin/env python3
-"""Ürün fotoğraflarını Wikimedia Commons'tan bir kez indirir: seed/photos/<SKU>.jpg
+"""Ürün fotoğraflarını Wikimedia Commons'tan indirir: seed/photos/<SKU>.jpg
 
 Hesap ya da API anahtarı gerekmez; yalnızca Python 3 ve internet. Seed
-(seed/seed.php) fotoğrafları bu klasörden yükler ve internete çıkmaz. Bu
-betik yalnızca fotoğraf setini doldurmak/yenilemek için; sonucu mağazada
-kontrol edip commit'leyin.
+(seed/seed.php) fotoğrafları bu klasörden yükler ve internete çıkmaz. Bu betik
+yalnızca fotoğraf setini hazırlamak için; sonucu kontrol edip commit'leyin.
 
 Kullanım:
-    python3 scripts/fetch-photos.py              # fotoğrafı olmayan ürünler
-    python3 scripts/fetch-photos.py LZ-0001 LZ-0042   # yalnızca bu ürünler (yeniden)
-    python3 scripts/fetch-photos.py --all        # hepsi (yeniden)
+    python3 scripts/fetch-photos.py                  # fotoğrafı olmayan ürünler
+    python3 scripts/fetch-photos.py LZ-0001 LZ-0042  # yalnızca bu ürünler (yeniden)
+    python3 scripts/fetch-photos.py --all            # hepsi (yeniden)
 
-seed/photos/manifest.csv her ürün için arama sorgusunu (`query`) ve seçilen
-Commons dosyasını (`file`, ör. "File:Tomatoes on the vine.jpg") tutar. `file`
-doluysa o dosya indirilir (herkes aynı sonucu alır); boşsa `query` ile aranır
-ve uygun ilk sonuç seçilir.
+Her çalıştırmadan sonra seed/photos/review.html oluşur: bütün ürünler ve
+fotoğrafları tek sayfada (git'e girmez).
 
-Beğenmediğiniz bir fotoğrafı değiştirmek için manifest.csv'de o satırda
-`file`'a Commons'ta beğendiğiniz dosyanın adını yazın ya da `file`'ı boşaltıp
-`query`'yi değiştirin, sonra betiği o SKU ile çalıştırın. Elle konmuş bir
-fotoğrafın (png/webp/jpg) üzerine, o SKU açıkça verilmedikçe yazılmaz.
+seed/photos/manifest.csv, ürün başına:
+    search    Commons'ta aranacak metin
+    keywords  Dosya başlığında geçmesi ZORUNLU kelimelerden en az biri (| ile ayrılır).
+              Alakasız sonuçları (ör. "cream" -> dondurma) bu eler.
+    exclude   Başlıkta geçerse fotoğrafı eleyen kelimeler (| ile ayrılır)
+    file      Seçilen Commons dosyası. Doluysa doğrudan o indirilir.
+    author, license, source_url   Atıf; betik doldurur.
 
-Lisans: yalnızca CC0, kamu malı, CC BY ve CC BY-SA dosyalar seçilir (ticari
-kullanım serbest). Yazar ve lisans manifest.csv'ye yazılır; seed bunları
-mağazadaki "Görsel kaynakları" sayfasında gösterir (CC BY'nin istediği atıf).
-Marka/logo görünen fotoğrafları kullanmayın.
+Beğenmediğiniz bir fotoğraf için: Commons'ta beğendiğiniz dosyanın adını
+`file`'a yazın (ör. "File:Tomatoes.jpg"), ya da `file`'ı boşaltıp `keywords` /
+`exclude`'u sıkılaştırın; sonra betiği o SKU ile çalıştırın. Elle konmuş bir
+fotoğrafın (jpg/png/webp) üzerine, SKU açıkça verilmedikçe yazılmaz.
+
+Yalnızca ticari kullanımı serbest lisanslar seçilir: CC0, kamu malı, CC BY,
+CC BY-SA. Seed yazar/lisansı görselin alt yazısına ve "Görsel kaynakları"
+sayfasına koyar (CC BY'nin istediği atıf).
 """
 
 import csv
@@ -40,27 +44,43 @@ import urllib.request
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PHOTOS = os.path.join(ROOT, "seed", "photos")
 MANIFEST = os.path.join(PHOTOS, "manifest.csv")
+REVIEW = os.path.join(PHOTOS, "review.html")
 CATALOG = os.path.join(ROOT, "seed", "products.csv")
-FIELDS = ["sku", "query", "file", "author", "license", "source_url"]
+FIELDS = ["sku", "search", "keywords", "exclude", "file", "author", "license", "source_url"]
+
 API = "https://commons.wikimedia.org/w/api.php"
 # Wikimedia her istekte tanımlayıcı bir User-Agent istiyor
-UA = "yerel-market-seed/1.0 (WooCommerce demo; https://github.com/egeeuzun/wordpress-shop-demo)"
+UA = "yerel-market-seed/2.0 (WooCommerce demo; https://github.com/egeeuzun/wordpress-shop-demo)"
 WIDTH = 960  # Commons'un standart küçük resim boyutlarından biri
 EXTS = ("jpg", "jpeg", "png", "webp")
-FREE = re.compile(r"^(cc0|public domain|pd\b.*|cc by(-sa)? \d(\.\d)?.*)$", re.I)
-# Ürün fotoğrafı olmayan sonuçlar: tablo, gravür, reklam, ekran görüntüsü...
-NOT_PHOTO = re.compile(
-    r"painting|drawing|illustration|engraving|lithograph|etching|poster|advert|wellcome|"
-    r"museum|manga|screenshot|logo|label|diagram|map\b|scan|apollo|nasa|cartoon|comic",
-    re.I,
+PAUSE = 1.0  # istekler arası saniye; Wikimedia'ya nazik davran
+
+FREE_LICENSE = re.compile(r"^(cc0|public domain|pd\b.*|cc by(-sa)? \d(\.\d)?.*)$", re.I)
+# Her ürün için geçerli: ürün fotoğrafı olmayan sonuçlar
+NOT_A_PHOTO = (
+    "painting", "drawing", "illustration", "engraving", "lithograph", "etching", "poster",
+    "advert", "wellcome", "museum", "manga", "screenshot", "logo", "diagram", "cartoon",
+    "comic", "scan", "postcard", "stamp", "map of", "apollo", "nasa", "microscop", "sem image",
 )
 
 
-def get_json(params):
+# --- Commons -------------------------------------------------------------------
+
+def api(params):
     url = API + "?" + urllib.parse.urlencode({**params, "format": "json", "formatversion": "2"})
     req = urllib.request.Request(url, headers={"User-Agent": UA})
     with urllib.request.urlopen(req, timeout=30) as resp:
-        return json.load(resp)
+        data = json.load(resp)
+    time.sleep(PAUSE)
+    return data
+
+
+IMAGEINFO = {
+    "prop": "imageinfo",
+    "iiprop": "url|size|mime|extmetadata",
+    "iiurlwidth": WIDTH,
+    "iiextmetadatafilter": "LicenseShortName|Artist",
+}
 
 
 def plain(value):
@@ -68,28 +88,39 @@ def plain(value):
     return html.unescape(re.sub(r"<[^>]+>", "", value or "")).strip()
 
 
-def info_props():
-    return {
-        "prop": "imageinfo",
-        "iiprop": "url|size|mime|extmetadata",
-        "iiurlwidth": WIDTH,
-        "iiextmetadatafilter": "LicenseShortName|Artist",
-    }
+def title_text(title):
+    """'File:Raw_chicken_legs (2).jpg' -> 'raw chicken legs (2)'"""
+    t = re.sub(r"^file:", "", title, flags=re.I)
+    t = re.sub(r"\.[a-z0-9]+$", "", t, flags=re.I)
+    return t.replace("_", " ").lower()
 
 
-def usable(page):
-    """Fotoğraf yeterince büyük, kareye yakın ve serbest lisanslı mı"""
+def words(cell):
+    return [w.strip().lower() for w in (cell or "").split("|") if w.strip()]
+
+
+def has(text, word):
+    """Kelime başından eşleşir: 'diaper' -> 'diapers' olur, 'air conditioner' ->
+    'hair conditioner' olmaz."""
+    return re.search(r"(?<![a-z0-9])" + re.escape(word), text) is not None
+
+
+def candidate(page, keywords, exclude):
+    """Sayfa uygunsa indirme bilgisini, değilse None döndürür."""
+    t = title_text(page.get("title", ""))
+    if keywords and not any(has(t, k) for k in keywords):
+        return None
+    if any(has(t, x) for x in exclude) or any(has(t, x) for x in NOT_A_PHOTO):
+        return None
     ii = (page.get("imageinfo") or [{}])[0]
     if ii.get("mime") != "image/jpeg" or not ii.get("thumburl"):
         return None
     w, h = ii.get("width", 0), ii.get("height", 0)
     if w < 800 or h < 600 or not (0.6 <= w / max(h, 1) <= 1.8):
         return None
-    if NOT_PHOTO.search(page["title"]):
-        return None
     meta = ii.get("extmetadata", {})
     lic = plain(meta.get("LicenseShortName", {}).get("value"))
-    if not FREE.match(lic):
+    if not FREE_LICENSE.match(lic):
         return None
     return {
         "file": page["title"],
@@ -100,28 +131,38 @@ def usable(page):
     }
 
 
-def search(query, used):
-    data = get_json({
+def search_pages(text):
+    data = api({
         "action": "query",
         "generator": "search",
-        "gsrsearch": f"{query} filetype:bitmap",
+        "gsrsearch": f"{text} filetype:bitmap",
         "gsrnamespace": 6,
-        "gsrlimit": 30,
-        **info_props(),
+        "gsrlimit": 50,
+        **IMAGEINFO,
     })
-    pages = sorted(data.get("query", {}).get("pages", []), key=lambda p: p.get("index", 0))
-    for page in pages:
-        found = usable(page)
-        # Aynı fotoğraf iki ürüne gelmesin (ör. iki pirinç çeşidi)
-        if found and found["file"] not in used:
-            return found
+    return sorted(data.get("query", {}).get("pages", []), key=lambda p: p.get("index", 0))
+
+
+def find(row, used):
+    """Önce `search` ile, sonuç çıkmazsa her anahtar kelime için başlıkta ara."""
+    keywords, exclude = words(row["keywords"]), words(row["exclude"])
+    attempts = [row["search"]] + [f'intitle:"{k}"' for k in keywords]
+    for text in attempts:
+        if not text:
+            continue
+        for page in search_pages(text):
+            found = candidate(page, keywords, exclude)
+            # Aynı fotoğraf iki ürüne gitmesin (ör. iki bebek bezi)
+            if found and found["file"] not in used:
+                return found
     return None
 
 
 def by_title(title):
-    data = get_json({"action": "query", "titles": title, **info_props()})
+    data = api({"action": "query", "titles": title, **IMAGEINFO})
     pages = data.get("query", {}).get("pages", [])
-    return usable(pages[0]) if pages else None
+    # Elle seçilmiş dosyada kelime kontrolü yapılmaz, lisans/boyut yapılır
+    return candidate(pages[0], [], []) if pages else None
 
 
 def download(url, dest):
@@ -129,65 +170,101 @@ def download(url, dest):
     with urllib.request.urlopen(req, timeout=60) as resp, open(dest + ".tmp", "wb") as out:
         out.write(resp.read())
     os.replace(dest + ".tmp", dest)
+    time.sleep(PAUSE)
 
 
-def has_photo(sku):
-    """Elle konmuş fotoğraf (png/webp...) da sayılır"""
-    return any(os.path.exists(os.path.join(PHOTOS, f"{sku}.{e}")) for e in EXTS)
+# --- Dosyalar --------------------------------------------------------------------
 
+def photo_path(sku):
+    for e in EXTS:
+        p = os.path.join(PHOTOS, f"{sku}.{e}")
+        if os.path.exists(p):
+            return p
+    return None
+
+
+def read_manifest():
+    with open(MANIFEST, newline="", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    for r in rows:
+        for k in FIELDS:
+            r[k] = r.get(k) or ""
+    return rows
+
+
+def write_manifest(rows):
+    with open(MANIFEST, "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=FIELDS, extrasaction="ignore")
+        w.writeheader()
+        w.writerows(rows)
+
+
+def write_review(rows, names):
+    cells = []
+    for r in rows:
+        p = photo_path(r["sku"])
+        img = (f'<img src="{html.escape(os.path.basename(p))}" alt="">' if p
+               else '<div class="none">fotoğraf yok</div>')
+        src = (f'<a href="{html.escape(r["source_url"])}">{html.escape(r["file"] or "elle konmuş")}</a>'
+               if r["source_url"] else html.escape(r["file"] or ("elle konmuş" if p else "")))
+        cells.append(
+            f'<figure>{img}<figcaption><b>{r["sku"]}</b> {html.escape(names.get(r["sku"], ""))}'
+            f'<br><small>{src} · {html.escape(r["license"])}</small></figcaption></figure>'
+        )
+    page = (
+        '<!doctype html><meta charset="utf-8"><title>Ürün fotoğrafları</title>'
+        "<style>body{font:14px system-ui;margin:20px;background:#f5f7f6}"
+        "main{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}"
+        "figure{margin:0;background:#fff;border-radius:12px;padding:8px;border:1px solid #e4eae7}"
+        "img,.none{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;background:#eee}"
+        ".none{display:grid;place-items:center;color:#999}small{color:#77847e;word-break:break-all}</style>"
+        f"<h1>Ürün fotoğrafları ({sum(1 for r in rows if photo_path(r['sku']))}/{len(rows)})</h1>"
+        "<main>" + "".join(cells) + "</main>"
+    )
+    with open(REVIEW, "w", encoding="utf-8") as f:
+        f.write(page)
+
+
+# --- Ana akış --------------------------------------------------------------------
 
 def main():
     args = sys.argv[1:]
     refetch_all = "--all" in args
     only = {a for a in args if not a.startswith("--")}
 
-    with open(MANIFEST, newline="", encoding="utf-8") as f:
-        rows = list(csv.DictReader(f))
-    for r in rows:
-        for k in FIELDS:
-            r[k] = r.get(k) or ""
-    names = {}
+    rows = read_manifest()
     with open(CATALOG, newline="", encoding="utf-8") as f:
-        for r in csv.DictReader(f):
-            names[r["SKU"]] = r["Name"]
+        names = {r["SKU"]: r["Name"] for r in csv.DictReader(f)}
 
     used = {r["file"] for r in rows if r["file"]}
-    done = failed = 0
+    done, failed = 0, []
     for row in rows:
         sku = row["sku"]
-        if not (refetch_all or sku in only or (not only and not has_photo(sku))):
+        if not (refetch_all or sku in only or (not only and photo_path(sku) is None)):
             continue
         try:
-            if row["file"]:
-                found = by_title(row["file"])
-                if found is None:
-                    print(f"{sku}: '{row['file']}' bulunamadı ya da lisansı/boyutu uygun değil")
-                    failed += 1
-                    continue
-            else:
-                found = search(row["query"], used)
-                if found is None:
-                    print(f"{sku}: '{row['query']}' için uygun fotoğraf yok, sorguyu değiştirin")
-                    failed += 1
-                    continue
+            found = by_title(row["file"]) if row["file"] else find(row, used)
+            if found is None:
+                why = f"'{row['file']}' indirilemedi (lisans/boyut)" if row["file"] else "uygun fotoğraf bulunamadı"
+                print(f"{sku}: {names.get(sku, '')}: {why}")
+                failed.append(sku)
+                continue
             download(found["thumb"], os.path.join(PHOTOS, f"{sku}.jpg"))
             row.update({k: found[k] for k in ("file", "author", "license", "source_url")})
             used.add(row["file"])
             done += 1
-            print(f"{sku}: {names.get(sku, '')} <- {row['file']} ({row['license']}, {row['author']})")
+            print(f"{sku}: {names.get(sku, '')} <- {row['file']} ({row['license']})")
         except Exception as e:  # ağ hatası vb.: diğer ürünlerle devam et
             print(f"{sku}: HATA {e}")
-            failed += 1
-        time.sleep(1)  # Wikimedia'ya nazik davran
+            failed.append(sku)
+        write_manifest(rows)  # yarıda kesilirse emek kaybolmasın
 
-    with open(MANIFEST, "w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=FIELDS, extrasaction="ignore")
-        w.writeheader()
-        w.writerows(rows)
-
-    missing = [r["sku"] for r in rows if not has_photo(r["sku"])]
-    print(f"\nİndirilen: {done}, hata: {failed}, fotoğrafı olmayan: {len(missing)} {' '.join(missing)}")
-    print("Kontrol: ./scripts/seed-demo.sh ile mağazaya yükleyip bakın; beğenmediklerinizi değiştirip commit'leyin.")
+    write_manifest(rows)
+    write_review(rows, names)
+    missing = [r["sku"] for r in rows if photo_path(r["sku"]) is None]
+    print(f"\nİndirilen: {done}, bulunamayan/hata: {len(failed)}, fotoğrafı olmayan: {len(missing)} {' '.join(missing)}")
+    print(f"Hepsini tek sayfada görmek için: {os.path.relpath(REVIEW, ROOT)}")
+    print("Fotoğrafı olmayan ürün mağazada kategorisinin görselini gösterir.")
 
 
 if __name__ == "__main__":

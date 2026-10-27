@@ -148,28 +148,39 @@ python3 scripts/fetch-photos.py            # products that have no photo yet
 python3 scripts/fetch-photos.py LZ-0042    # just these products, again
 ```
 
-It only picks freely licensed photos that may be used commercially: CC0,
-public domain, CC BY and CC BY-SA. Each photo must be a large enough JPEG and
-close to square. A hand-placed photo is never overwritten unless you name its
-SKU.
+When it finishes it writes `seed/photos/review.html`, a single page showing
+every product with its photo. Git ignores this file.
 
-For each product, `manifest.csv` holds:
+The script only picks a photo when all of these hold:
+
+- **The title fits the product.** The file name contains at least one of the
+  product's `keywords`. This is what stops a search for "cream" from returning
+  an ice cream sandwich.
+- **No excluded word.** The title contains none of the product's `exclude`
+  words, such as "air" for hair conditioner or "forest" for bin bags.
+- **It is a photo.** Paintings, posters, adverts, screenshots, logos and
+  similar files are skipped for every product.
+- **It is free to use.** The licence is CC0, public domain, CC BY or CC BY-SA.
+- **It is the right shape.** A JPEG, large enough and close to square.
+- **It is not taken.** No other product uses the same photo.
+
+`manifest.csv` has one row per product:
 
 | Column | What it is |
 | --- | --- |
-| `query` | The search used for this product. |
-| `file` | The chosen Commons file, for example `File:Tomatoes.jpg`. |
+| `search` | The Commons search. If nothing fits, the script searches again for each keyword in titles only. |
+| `keywords` | The title must contain at least one of these, separated by `\|`. Words match from their start, so `diaper` also matches "diapers". |
+| `exclude` | The title must contain none of these, separated by `\|`. |
+| `file` | The chosen Commons file, for example `File:Tomatoes.jpg`. If set, that exact file is downloaded. |
 | `author`, `license`, `source_url` | Credit, filled in by the script. |
 
-If `file` is set, the script downloads that exact file. If not, it searches
-with `query` and takes the first suitable result that no other product uses.
-
 To replace a photo, put the name of a file you like on Commons into `file`, or
-clear `file` and change `query`. Then run the script with that SKU.
+clear `file` and tighten `keywords` or `exclude`. Then run the script with that
+SKU. A hand-placed photo is never overwritten unless you name its SKU.
 
 CC BY and CC BY-SA require credit. The seed shows the author and licence as
 the image caption, and lists every photo on a **Görsel kaynakları** (image
 credits) page linked from the footer.
 
-Check the result in the store, then commit the photos together with
-`manifest.csv`.
+A product without a photo shows its category's image in the store, so a gap
+never breaks anything.

@@ -10,3 +10,4 @@ imagedefinitions.json
 !seed/photos/*.jpeg
 !seed/photos/*.png
 __pycache__/
+seed/photos/review.html
