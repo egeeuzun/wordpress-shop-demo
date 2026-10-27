@@ -19,9 +19,8 @@ and runs with WP-CLI inside the container. It needs no API keys.
 - **National IDs (TCKN) are fake.** They are random 11-digit numbers that pass
   the checksum rule, so the checkout accepts them. They do not belong to anyone.
 - **No real brands.** Products have generic names like
-  "Tam Yağlı Süt 1 L" (whole milk, 1 L). Category/product images use real stock
-  photos when reachable; if download fails, the seed falls back to plain coloured
-  placeholders.
+  "Tam Yağlı Süt 1 L" (whole milk, 1 L). Product photos are royalty-free stock
+  photos (see [Product photos](#product-photos)); none should show a logo.
 - **No real payments.** Only Cash on Delivery and Bank Transfer are offered, and
   the bank account (IBAN) shown is invalid on purpose.
 - **No e-mails are sent** while the script runs.
@@ -59,7 +58,7 @@ Options are written as `name=value` (WP-CLI's `eval-file` does not accept
 | `orders=N` | `300` | Number of orders, spread over the last 90 days. |
 | `customers=N` | `150` | Number of registered customers. About 15% of orders are guest orders. |
 | `seed=N` | `2026` | Random seed. The same seed always gives the same customers and orders. |
-| `no-images` | — | Skip category images (both remote photos and fallback placeholders). |
+| `no-images` | — | Skip product and category images. |
 | `reset-stock` | — | Set existing products' stock back to the CSV values. |
 | `customer-pass=…` | `demo123` | Password for the demo customer account. |
 | `csv=/path` | `products.csv` | Use a different product file. |
@@ -110,3 +109,58 @@ product. Stock is left alone (orders have already lowered it) unless you pass
 To load just the products, import `products.csv` in *wp-admin → Products →
 Import*. The columns match WooCommerce's importer, and `Meta: _lz_unit` becomes
 the product unit. Customers, orders and store settings still need `seed.php`.
+
+## Product photos
+
+Every product has its own photo, `seed/photos/<SKU>.jpg` (1000×1000 JPEG). The
+photos live in the repo, so the seed never downloads anything.
+
+- **Product image:** the product's own photo.
+- **Category image:** the photo of the first product in that category.
+- **No photo:** a product without a photo uses its category image. A category
+  with no photos at all gets a plain coloured square.
+- **Your own changes stay:** an image you pick by hand in wp-admin is never
+  replaced.
+- **Re-running:** a photo is uploaded again only when its file changes.
+
+### Where the photos come from
+
+They are from [Pexels](https://www.pexels.com/). The
+[Pexels license](https://www.pexels.com/license/) allows free use, including
+commercial use, and needs no credit. We still record the photographer: in
+`seed/photos/manifest.csv`, and as the image caption in the media library.
+
+`manifest.csv` has one row per product:
+
+| Column | What it is |
+| --- | --- |
+| `query` | The Pexels search used for this product. |
+| `pexels_id` | The chosen photo. The number at the end of its Pexels page address. |
+| `photographer`, `photographer_url`, `source_url` | Credit, filled in by the script. |
+
+### Fetching or changing photos
+
+`scripts/fetch-photos.py` downloads the photos. It needs a free Pexels API key
+(<https://www.pexels.com/api/>) and runs anywhere with Python 3 and internet
+access, for example a Codespace:
+
+```bash
+export PEXELS_API_KEY=...
+python3 scripts/fetch-photos.py            # products that have no photo yet
+python3 scripts/fetch-photos.py LZ-0042    # just these products, again
+python3 scripts/fetch-photos.py --all      # everything, again
+```
+
+If a row has a `pexels_id`, the script downloads that exact photo. If not, it
+searches with `query` and takes the first result that no other product is
+using.
+
+To replace a photo you don't like:
+
+1. In `manifest.csv`, either write the number of a photo you like on Pexels
+   into `pexels_id`, or clear `pexels_id` and change `query`.
+2. Run the script with that SKU.
+
+Then run `./scripts/seed-demo.sh` to load the photos into the store. Check them
+on the site, and commit the photos together with `manifest.csv`. Don't use
+photos that show a brand or logo.

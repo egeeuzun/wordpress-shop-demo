@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Lokal ortamda demo market'i kurar: WordPress kurulumu (Türkçe), WooCommerce
 # + tema, ardından seed kiti (seed/seed.php): ~90 ürün, sentetik müşteri ve
-# siparişler. Dil paketleri imajda; kategori görselleri için internet erişimi varsa
-# gerçek fotoğraflar da yüklenir.
+# siparişler. Dil paketleri imajda, ürün fotoğrafları repoda (seed/photos);
+# seed internete çıkmaz.
 # Önce: docker compose up -d --build
 #
 # Ek argümanlar seed.php'ye geçer, örn:
