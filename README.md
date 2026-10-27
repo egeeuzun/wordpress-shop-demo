@@ -12,8 +12,8 @@ and no real payments. Nothing is sold.
 
 - **86 products** in 9 grocery categories (fruit & vegetables, dairy, meat,
   pantry, snacks, drinks, cleaning, personal care, baby). Each has a SKU
-  (`LZ-0001`…), price, stock, weight and unit. A few are on sale. Images are
-  plain coloured placeholders.
+  (`LZ-0001`…), price, stock, weight and unit. A few are on sale. Category
+  images use real photos when reachable, with automatic placeholder fallback.
 - **150 customers and 300 orders** from the last 90 days. Names, Istanbul
   addresses, `+90 5xx` phone numbers and `@example.com` e-mails are all
   randomly generated.
@@ -68,8 +68,8 @@ wp theme activate shopdemo
 wp eval-file /usr/src/shop-seed/seed.php
 ```
 
-None of this needs API keys or makes outbound requests. All options, and which
-database tables hold the personal data, are in [`seed/README.md`](seed/README.md).
+None of this needs API keys. All options, and which database tables hold the
+personal data, are in [`seed/README.md`](seed/README.md).
 
 ## Language
 
