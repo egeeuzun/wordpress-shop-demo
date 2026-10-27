@@ -54,6 +54,18 @@ RUN set -eux; \
     patch-object-cache.sh /usr/src/extras/object-cache.php; \
     rm -rf /tmp/*.zip /tmp/memcached-redux
 
+# Türkçe dil paketleri imaja gömülür: çalışma anında wordpress.org'a gidilmez
+# ve ECS'te task yenilense de çeviriler kaybolmaz. Paketler imajdaki çekirdek,
+# eklenti ve tema sürümleriyle eşleşir; çekirdek/WooCommerce/Storefront
+# çevirisi bulunamazsa build durur.
+COPY docker/install-translations.sh /usr/local/bin/install-translations.sh
+RUN chmod +x /usr/local/bin/install-translations.sh \
+    && install-translations.sh tr_TR \
+        core \
+        plugin:woocommerce \
+        theme:storefront \
+        'plugin:amazon-s3-and-cloudfront?'
+
 # Özel tema, mu-plugin'ler ve ortam değişkeni tabanlı wp-config
 COPY wp-content/ /usr/src/wordpress/wp-content/
 COPY wp-config/wp-config.php /usr/src/wordpress/wp-config.php

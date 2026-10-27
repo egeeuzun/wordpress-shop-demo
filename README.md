@@ -38,8 +38,7 @@ docker compose up -d --build
 - **Store:** http://localhost:8080
 - **Admin:** http://localhost:8080/wp-admin (`admin` / `admin123`)
 
-`seed-demo.sh` installs WordPress and the Turkish language packs, then fills
-the store. You can run it again: it skips products, customers and orders that
+`seed-demo.sh` installs WordPress in Turkish, then fills the store. You can run it again: it skips products, customers and orders that
 already exist, so nothing is duplicated.
 
 ```bash
@@ -50,15 +49,46 @@ already exist, so nothing is duplicated.
 ## Filling the store on AWS
 
 The seed kit is built into the image at `/usr/src/shop-seed/`, so the same
-command works in a running ECS task (WordPress installed, WooCommerce active):
+steps work in a running ECS task. Open a shell in it:
 
 ```bash
 aws ecs execute-command --cluster <CLUSTER> --task <TASK_ID> --container wordpress \
-  --interactive --command "su -s /bin/sh www-data -c 'wp eval-file /usr/src/shop-seed/seed.php'"
+  --interactive --command "su -s /bin/sh www-data"
 ```
 
-It needs no API keys and makes no outbound requests. All options, and which
+Then install WordPress (skip if already installed), switch on the store and
+fill it:
+
+```bash
+wp core install --url="$WP_HOME" --title="Yerel Market" --locale=tr_TR \
+  --admin_user=admin --admin_password='<strong password>' \
+  --admin_email=demo@example.com --skip-email
+wp plugin activate woocommerce
+wp theme activate shopdemo
+wp eval-file /usr/src/shop-seed/seed.php
+```
+
+None of this needs API keys or makes outbound requests. All options, and which
 database tables hold the personal data, are in [`seed/README.md`](seed/README.md).
+
+## Language
+
+The store is in Turkish. The Turkish (`tr_TR`) language packs for WordPress,
+WooCommerce and Storefront (and WP Offload Media Lite, if a translation exists)
+are built into the image by `docker/install-translations.sh`. It reads the
+installed versions and downloads the matching packages, so the translations
+always fit the code. If the core, WooCommerce or Storefront translation is
+missing, the build fails instead of quietly shipping an English store.
+
+Because the packs are in the image:
+
+- the site needs no connection to wordpress.org to be in Turkish;
+- they survive task replacement on ECS (`wp-content/languages` is not on EFS
+  or any other shared disk);
+- the seed kit sets the site language to `tr_TR`.
+
+Automatic translation updates are off, like other background updates. New
+translations arrive with the next image build.
 
 ## Architecture
 
@@ -86,7 +116,7 @@ CI/CD: GitHub → CodeBuild → CodePipeline → ECR → ECS
 ├── Dockerfile               # Fargate container image
 ├── buildspec.yml            # CodeBuild specification
 ├── docker-compose.yml       # Local development setup
-├── docker/                  # Entrypoint, PHP settings, health check, drop-in patch
+├── docker/                  # Entrypoint, PHP settings, health check, drop-in patch, language packs
 ├── wp-config/wp-config.php  # Env-based WordPress config
 ├── wp-content/
 │   ├── themes/shopdemo/     # Custom Storefront child theme
@@ -94,7 +124,7 @@ CI/CD: GitHub → CodeBuild → CodePipeline → ECR → ECS
 ├── seed/                    # Demo data kit baked into the image (/usr/src/shop-seed)
 │   ├── products.csv         # 86 grocery products (WooCommerce CSV importer format)
 │   └── seed.php             # WP-CLI seeder: store setup, catalog, synthetic customers & orders
-├── scripts/seed-demo.sh     # Local setup: core install + language packs + seed.php
+├── scripts/seed-demo.sh     # Local setup: core install (Turkish) + seed.php
 └── ecs/
     ├── taskdef.example.json      # ECS Task Definition template
     ├── s3-media-policy.example.json  # Task role policy for the media bucket
@@ -252,6 +282,6 @@ uncached.
   to freeze the file system if you want a strictly immutable deployment.
 - Background auto-updates are off; set `WORDPRESS_AUTOMATIC_UPDATES=1` to enable them.
 - Upgrade WordPress/WooCommerce by updating base image tags in `Dockerfile`.
-- Execute initial WP setup via ECS Exec using the pre-installed WP-CLI (`wp core install`).
+- Execute initial WP setup via ECS Exec using the pre-installed WP-CLI (`wp core install --locale=tr_TR`).
 - Using RDS Read Replicas requires HyperDB or LudicrousDB plugins (default config uses Writer endpoint only).
 - ECS tasks need outbound HTTPS for the plugin store, and reachability to S3/ElastiCache.
