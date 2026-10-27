@@ -12,8 +12,9 @@ and no real payments. Nothing is sold.
 
 - **86 products** in 9 grocery categories (fruit & vegetables, dairy, meat,
   pantry, snacks, drinks, cleaning, personal care, baby). Each has a SKU
-  (`LZ-0001`…), price, stock, weight and unit. A few are on sale. Category
-  images use real photos when reachable, with automatic placeholder fallback.
+  (`LZ-0001`…), price, stock, weight and unit. A few are on sale. Each product
+  has its own freely licensed photo (Wikimedia Commons), stored in the repo
+  (`seed/photos/`); see [`seed/README.md`](seed/README.md#product-photos).
 - **150 customers and 300 orders** from the last 90 days. Names, Istanbul
   addresses, `+90 5xx` phone numbers and `@example.com` e-mails are all
   randomly generated.

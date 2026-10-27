@@ -67,7 +67,8 @@ add_action('init', function () {
         return;
     }
 
-    // Sepet ikonu arama kutusunun yanına, başlığın ilk satırına
+    // Başlığın ilk satırı: logo | arama | hesap | sepet
+    add_action('storefront_header', 'shopdemo_header_account', 40);
     remove_action('storefront_header', 'storefront_header_cart', 60);
     add_action('storefront_header', 'storefront_header_cart', 40);
 
@@ -105,6 +106,26 @@ add_action('storefront_before_header', function () {
     </div>
     <?php
 }, 5);
+
+/**
+ * Başlıkta hesap linki: girişsiz "Giriş yap", girişli "Hesabım".
+ * Storefront bunu yalnızca mobildeki alt çubukta gösteriyor.
+ */
+function shopdemo_header_account(): void
+{
+    $url = wc_get_page_permalink('myaccount');
+    if (is_user_logged_in()) {
+        $user  = wp_get_current_user();
+        $label = $user->first_name !== '' ? $user->first_name : 'Hesabım';
+    } else {
+        $label = 'Giriş yap';
+    }
+    printf(
+        '<a class="shopdemo-account" href="%s"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span>%s</span></a>',
+        esc_url($url),
+        esc_html($label)
+    );
+}
 
 /** Ana sayfanın başındaki kahraman alanı. */
 function shopdemo_hero(): void
@@ -189,5 +210,10 @@ add_filter('storefront_copyright_text', function () {
 });
 add_filter('storefront_credit_links_output', function ($links) {
     $notice = '<span class="shopdemo-demo-notice">Ürünler, fiyatlar ve müşteri verileri sentetiktir.</span>';
+    // Seed fotoğraf atıflarını bu sayfaya yazar (CC BY lisansları atıf ister)
+    $credits = get_page_by_path('gorsel-kaynaklari');
+    if ($credits && $credits->post_status === 'publish') {
+        $notice .= sprintf(' <a class="shopdemo-credits-link" href="%s">Görsel kaynakları</a>', esc_url(get_permalink($credits)));
+    }
     return $links === '' ? $notice : $links . ' ' . $notice;
 });

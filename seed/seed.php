@@ -4,7 +4,7 @@
  *
  * İmaja /usr/src/shop-seed/ altında gömülüdür; WP-CLI ile konteyner içinden
  * çalışır (lokalde docker compose exec, AWS'de ECS Exec). REST API anahtarı
- * gerekmez:
+ * gerekmez, dış servise istek atmaz (ürün fotoğrafları repoda: seed/photos):
  *
  *   wp eval-file /usr/src/shop-seed/seed.php [dry-run] [orders=300] [customers=150]
  *                [seed=2026] [no-images] [reset-stock] [customer-pass=demo123]
@@ -68,17 +68,7 @@ const LZSEED_NOTES = ['Zili çalmayın, lütfen telefonla arayın.', 'Kapıcıya
 // Sepette kategori ağırlığı: taze ürün ve kahvaltılık daha sık alınır
 const LZSEED_CATEGORY_WEIGHT = ['meyve-sebze' => 5, 'sut-kahvaltilik' => 5, 'temel-gida' => 4,
     'et-tavuk' => 3, 'icecek' => 3, 'atistirmalik' => 3, 'temizlik' => 2, 'kisisel-bakim' => 2, 'bebek' => 1];
-// Kategori fotoğrafları (uzaktan indirilir); başarısız olursa düz renk placeholder kullanılır.
-const LZSEED_CATEGORY_PHOTO_URLS = ['meyve-sebze' => 'https://picsum.photos/seed/lz-meyve-sebze/1200/1200.jpg',
-    'sut-kahvaltilik' => 'https://picsum.photos/seed/lz-sut-kahvaltilik/1200/1200.jpg',
-    'et-tavuk' => 'https://picsum.photos/seed/lz-et-tavuk/1200/1200.jpg',
-    'temel-gida' => 'https://picsum.photos/seed/lz-temel-gida/1200/1200.jpg',
-    'atistirmalik' => 'https://picsum.photos/seed/lz-atistirmalik/1200/1200.jpg',
-    'icecek' => 'https://picsum.photos/seed/lz-icecek/1200/1200.jpg',
-    'temizlik' => 'https://picsum.photos/seed/lz-temizlik/1200/1200.jpg',
-    'kisisel-bakim' => 'https://picsum.photos/seed/lz-kisisel-bakim/1200/1200.jpg',
-    'bebek' => 'https://picsum.photos/seed/lz-bebek/1200/1200.jpg'];
-// Fallback placeholder renkleri (düz renk, metin/marka yok)
+// Fotoğrafı olmayan kategoriler için yedek görsel renkleri (düz renk, metin/marka yok)
 const LZSEED_COLORS = ['meyve-sebze' => '#7cb342', 'sut-kahvaltilik' => '#f5f0e1', 'et-tavuk' => '#c0504d',
     'temel-gida' => '#d9a441', 'atistirmalik' => '#e8833a', 'icecek' => '#4a90c2', 'temizlik' => '#5bc0be',
     'kisisel-bakim' => '#b48ec9', 'bebek' => '#f2b5c4'];
@@ -384,6 +374,12 @@ function lzseed_apply_settings(): void
         'woocommerce_prices_include_tax'               => 'yes',
         'woocommerce_enable_guest_checkout'            => 'yes',
         'woocommerce_enable_signup_and_login_from_checkout' => 'yes',
+        // Hesabım sayfasında giriş + üye ol. Demo e-posta göndermediği için
+        // parolayı ziyaretçi kendisi belirler (otomatik parola e-postayla gider).
+        'woocommerce_enable_myaccount_registration'    => 'yes',
+        'woocommerce_registration_generate_username'   => 'yes',
+        'woocommerce_registration_generate_password'   => 'no',
+        'woocommerce_enable_checkout_login_reminder'   => 'yes',
         // Üst bant: WooCommerce'in yerleşik "demo mağaza" bildirimi
         'woocommerce_demo_store'                       => 'yes',
         'woocommerce_demo_store_notice'                => LZSEED_DEMO_NOTICE,
@@ -516,84 +512,249 @@ function lzseed_apply_categories(array $catalog): array
     return $map;
 }
 
+/** seed/photos/manifest.csv: SKU => [query, file, author, license, source_url] */
+function lzseed_read_photo_credits(string $dir): array
+{
+    $file = "$dir/manifest.csv";
+    if (!is_readable($file)) {
+        return [];
+    }
+    $fh     = fopen($file, 'r');
+    $header = fgetcsv($fh, null, ',', '"', '');
+    $rows   = [];
+    while (($row = fgetcsv($fh, null, ',', '"', '')) !== false) {
+        if (count($row) === count($header)) {
+            $r               = array_combine($header, $row);
+            $rows[$r['sku']] = $r;
+        }
+    }
+    fclose($fh);
+    return $rows;
+}
+
 /**
- * Kategori başına gerçek fotoğraf dener; indirilemezse düz renk placeholder üretir.
- * Medya kütüphanesine yüklenir; S3 offload açıksa bucket'a da gider.
- *
- * @return array<string,int> kategori adı => attachment id
+ * Seed'in yüklediği (değiştirilebilir) bir görsel mi. Elle seçilen ürün
+ * görsellerine dokunulmaz; silinmiş bir görsel de değiştirilebilir sayılır.
  */
-function lzseed_apply_placeholders(array $categories): array
+function lzseed_is_seed_image(int $id): bool
+{
+    if (!$id || !get_post($id)) {
+        return true;
+    }
+    foreach (['_lz_photo', '_lz_category_image', '_lz_placeholder'] as $key) {
+        if (get_post_meta($id, $key, true) !== '') {
+            return true;
+        }
+    }
+    return false;
+}
+
+/** seed/photos/<SKU>.(jpg|jpeg|png|webp): elle konan fotoğraflar da olur. */
+function lzseed_find_photo(string $dir, string $sku): ?string
+{
+    foreach (['jpg', 'jpeg', 'png', 'webp'] as $ext) {
+        if (is_file("$dir/$sku.$ext")) {
+            return "$dir/$sku.$ext";
+        }
+    }
+    return null;
+}
+
+/**
+ * seed/photos/<SKU>.* dosyasını medya kütüphanesine yükler ya da daha önce
+ * yüklenmiş aynı dosyayı döndürür. Dosya değiştiyse yeniden yüklenir, eskisi
+ * silinir. İnternete çıkmaz: fotoğraflar repoda durur (scripts/fetch-photos.py).
+ */
+function lzseed_product_photo(string $sku, string $path, string $title, array $credit): int
+{
+    $hash     = md5_file($path);
+    $existing = get_posts([
+        'post_type' => 'attachment', 'post_status' => 'inherit', 'numberposts' => 1, 'fields' => 'ids',
+        'meta_key' => '_lz_photo', 'meta_value' => $sku,
+    ]);
+    $old = $existing ? (int) $existing[0] : 0;
+    if ($old && get_post_meta($old, '_lz_photo_hash', true) === $hash) {
+        return $old;
+    }
+
+    // media_handle_sideload dosyayı taşıdığı için kopyası yüklenir
+    $tmp = wp_tempnam(basename($path));
+    copy($path, $tmp);
+    $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+    $id  = media_handle_sideload(['name' => strtolower($sku) . ".$ext", 'tmp_name' => $tmp], 0, $title);
+    if (is_wp_error($id)) {
+        @unlink($tmp);
+        WP_CLI::warning("Fotoğraf yüklenemedi ($sku): " . $id->get_error_message());
+        return $old;
+    }
+    update_post_meta($id, '_lz_photo', $sku);
+    update_post_meta($id, '_lz_photo_hash', $hash);
+    update_post_meta($id, '_wp_attachment_image_alt', $title);
+    if (!empty($credit['author'])) {
+        wp_update_post(['ID' => $id, 'post_excerpt' => lzseed_photo_caption($credit)]);
+        update_post_meta($id, '_lz_photo_source', $credit['source_url'] ?? '');
+    }
+    if ($old) {
+        wp_delete_attachment($old, true);
+    }
+    return (int) $id;
+}
+
+/** "Fotoğraf: Yazar (CC BY-SA 4.0, Wikimedia Commons)" */
+function lzseed_photo_caption(array $credit): string
+{
+    $origin = str_contains($credit['source_url'] ?? '', 'wikimedia.org') ? ', Wikimedia Commons' : '';
+    $lic    = trim(($credit['license'] ?? '') . $origin, ', ');
+    return 'Fotoğraf: ' . $credit['author'] . ($lic !== '' ? " ($lic)" : '');
+}
+
+/**
+ * "Görsel kaynakları" sayfası: her ürün fotoğrafının yazarı, lisansı ve
+ * kaynağı. CC BY / CC BY-SA lisansları atıf ister; footer bu sayfaya bağlanır.
+ */
+function lzseed_apply_credits_page(array $catalog, array $credits): void
+{
+    $items = '';
+    foreach ($catalog as $sku => $row) {
+        $c = $credits[$sku] ?? [];
+        if (empty($c['author'])) {
+            continue;
+        }
+        $items .= sprintf(
+            "<li><strong>%s</strong> — %s, %s. <a href=\"%s\" rel=\"nofollow noopener\">Kaynak</a></li>\n",
+            esc_html($row['Name']),
+            esc_html($c['author']),
+            esc_html($c['license'] ?: 'lisans belirtilmemiş'),
+            esc_url($c['source_url'] ?? '')
+        );
+    }
+    $page = get_page_by_path('gorsel-kaynaklari');
+    if ($items === '') {
+        return;
+    }
+    $content = "<!-- wp:paragraph --><p>Bu demo mağazadaki ürün fotoğrafları serbest lisanslıdır. "
+        . "Ürünler ve fotoğraflar arasında gerçek bir marka ilişkisi yoktur.</p><!-- /wp:paragraph -->\n"
+        . "<!-- wp:html --><ul class=\"shopdemo-credits\">\n$items</ul><!-- /wp:html -->";
+    $data = ['post_type' => 'page', 'post_status' => 'publish', 'post_title' => 'Görsel kaynakları',
+        'post_name' => 'gorsel-kaynaklari', 'post_content' => $content];
+    if ($page) {
+        $data['ID'] = $page->ID;
+        wp_update_post($data);
+    } else {
+        wp_insert_post($data);
+    }
+}
+
+/** Hiç fotoğrafı olmayan kategori için düz renkli yedek görsel (bir kez üretilir). */
+function lzseed_category_placeholder(string $name): int
+{
+    $slug     = sanitize_title($name);
+    $existing = get_posts([
+        'post_type' => 'attachment', 'post_status' => 'inherit', 'numberposts' => -1, 'fields' => 'ids',
+        'meta_key' => '_lz_placeholder', 'meta_value' => $slug,
+    ]);
+    foreach ($existing as $id) {
+        if (get_post_meta((int) $id, '_lz_image_type', true) !== 'photo') {
+            return (int) $id;
+        }
+    }
+    [$r, $g, $b] = sscanf(LZSEED_COLORS[$slug] ?? '#9e9e9e', '#%02x%02x%02x');
+    $img = imagecreatetruecolor(800, 800);
+    imagefill($img, 0, 0, imagecolorallocate($img, $r, $g, $b));
+    // Ortada açık tonlu daire: ızgarada düz kareden daha okunur
+    imagefilledellipse($img, 400, 400, 420, 420, imagecolorallocatealpha($img, 255, 255, 255, 80));
+    $tmp = wp_tempnam("lz-$slug.png");
+    imagepng($img, $tmp);
+    imagedestroy($img);
+
+    $id = media_handle_sideload(['name' => "lz-placeholder-$slug.png", 'tmp_name' => $tmp], 0, "$name (placeholder)");
+    if (is_wp_error($id)) {
+        @unlink($tmp);
+        WP_CLI::warning("Placeholder yüklenemedi ($name): " . $id->get_error_message());
+        return 0;
+    }
+    update_post_meta($id, '_lz_placeholder', $slug);
+    update_post_meta($id, '_lz_image_type', 'placeholder');
+    return (int) $id;
+}
+
+/**
+ * Ürün ve kategori görselleri:
+ *  - seed/photos/<SKU>.jpg (ya da .jpeg/.png/.webp) varsa ürünün kendi fotoğrafı olur.
+ *  - Kategori kapağı, kategorideki ilk fotoğraflı ürünün fotoğrafıdır; hiç yoksa düz renk.
+ *  - Fotoğrafı olmayan ürün kategori kapağını kullanır.
+ *  - Elle değiştirilmiş ürün görselleri korunur.
+ *  - Eski sürümün Picsum'dan indirdiği rastgele kategori fotoğrafları silinir.
+ */
+function lzseed_apply_images(array $catalog, array $products, array $categories, array &$stats): void
 {
     if (!function_exists('imagecreatetruecolor')) {
-        WP_CLI::warning('GD yok; placeholder görseller atlanıyor.');
-        return [];
+        WP_CLI::warning('GD yok; görseller atlanıyor.');
+        return;
     }
     require_once ABSPATH . 'wp-admin/includes/file.php';
     require_once ABSPATH . 'wp-admin/includes/media.php';
     require_once ABSPATH . 'wp-admin/includes/image.php';
 
-    $map = [];
-    foreach ($categories as $name => $term_id) {
-        $slug     = sanitize_title($name);
-        $existing = get_posts([
-            'post_type' => 'attachment', 'post_status' => 'inherit', 'numberposts' => 1, 'fields' => 'ids',
-            'meta_key' => '_lz_category_image', 'meta_value' => $slug,
-        ]);
-        if (!$existing) {
-            $existing = get_posts([
-                'post_type' => 'attachment', 'post_status' => 'inherit', 'numberposts' => 1, 'fields' => 'ids',
-                'meta_key' => '_lz_placeholder', 'meta_value' => $slug, // eski seed sürümüyle uyumluluk
-            ]);
-        }
-        if ($existing) {
-            $map[$name] = (int) $existing[0];
-        } else {
-            $photo_url = LZSEED_CATEGORY_PHOTO_URLS[$slug] ?? '';
-            $id        = 0;
-            if ($photo_url) {
-                $tmp = download_url($photo_url, 30);
-                if (is_wp_error($tmp)) {
-                    WP_CLI::warning("Kategori fotoğrafı indirilemedi ($name): " . $tmp->get_error_message());
-                } else {
-                    $id = media_handle_sideload(['name' => "lz-photo-$slug.jpg", 'tmp_name' => $tmp], 0, $name);
-                    if (is_wp_error($id)) {
-                        @unlink($tmp);
-                        WP_CLI::warning("Kategori fotoğrafı yüklenemedi ($name): " . $id->get_error_message());
-                        $id = 0;
-                    }
-                }
-            }
-            if (!$id) {
-                [$r, $g, $b] = sscanf(LZSEED_COLORS[$slug] ?? '#9e9e9e', '#%02x%02x%02x');
-                $img = imagecreatetruecolor(800, 800);
-                imagefill($img, 0, 0, imagecolorallocate($img, $r, $g, $b));
-                // Ortada açık tonlu daire: ızgarada düz kareden daha okunur
-                imagefilledellipse($img, 400, 400, 420, 420, imagecolorallocatealpha($img, 255, 255, 255, 80));
-                $tmp = wp_tempnam("lz-$slug.png");
-                imagepng($img, $tmp);
-                imagedestroy($img);
+    $dir     = __DIR__ . '/photos';
+    $credits = lzseed_read_photo_credits($dir);
 
-                $id = media_handle_sideload(['name' => "lz-placeholder-$slug.png", 'tmp_name' => $tmp], 0, "$name (placeholder)");
-                if (is_wp_error($id)) {
-                    @unlink($tmp);
-                    WP_CLI::warning("Placeholder yüklenemedi ($name): " . $id->get_error_message());
-                    continue;
-                }
-                update_post_meta($id, '_lz_image_type', 'placeholder');
-            } else {
-                update_post_meta($id, '_lz_image_type', 'photo');
+    $photos = [];
+    foreach ($catalog as $sku => $row) {
+        $path = lzseed_find_photo($dir, $sku);
+        if ($path !== null) {
+            $photos[$sku] = lzseed_product_photo($sku, $path, $row['Name'], $credits[$sku] ?? []);
+            if (count($photos) % 10 === 0) {
+                WP_CLI::log('    fotoğraflar: ' . count($photos));
             }
-            update_post_meta($id, '_lz_category_image', $slug);
-            update_post_meta($id, '_lz_placeholder', $slug); // geri uyumluluk
-            $map[$name] = (int) $id;
         }
-        update_term_meta($term_id, 'thumbnail_id', $map[$name]); // Storefront "Kategoriler" bölümü
     }
-    return $map;
+    if (!$photos) {
+        WP_CLI::warning('seed/photos altında ürün fotoğrafı yok; düz renkli görseller kullanılıyor. Bkz. scripts/fetch-photos.py');
+    }
+
+    $covers = [];
+    foreach ($categories as $name => $term_id) {
+        foreach ($catalog as $sku => $row) {
+            if (($row['_categories'][0] ?? '') === $name && !empty($photos[$sku])) {
+                $covers[$name] = $photos[$sku];
+                break;
+            }
+        }
+        $covers[$name] ??= lzseed_category_placeholder($name);
+        if ($covers[$name]) {
+            update_term_meta($term_id, 'thumbnail_id', $covers[$name]); // Storefront "Kategoriler" bölümü
+        }
+    }
+
+    foreach ($products as $sku => $product_id) {
+        $product = wc_get_product($product_id);
+        if (!$product) {
+            continue;
+        }
+        $want    = $photos[$sku] ?? ($covers[$catalog[$sku]['_categories'][0] ?? ''] ?? 0);
+        $current = (int) $product->get_image_id();
+        if ($want && $want !== $current && lzseed_is_seed_image($current)) {
+            $product->set_image_id($want);
+            $product->save();
+            $stats['images_set']++;
+        }
+    }
+
+    lzseed_apply_credits_page($catalog, $credits);
+
+    // Picsum'dan gelen eski rastgele fotoğraflar artık hiçbir yerde kullanılmıyor
+    $stale = get_posts([
+        'post_type' => 'attachment', 'post_status' => 'inherit', 'numberposts' => -1, 'fields' => 'ids',
+        'meta_key' => '_lz_image_type', 'meta_value' => 'photo',
+    ]);
+    foreach ($stale as $id) {
+        wp_delete_attachment((int) $id, true);
+    }
 }
 
 /** @return array<string,int> SKU => ürün id */
-function lzseed_apply_products(array $catalog, array $categories, array $images, bool $reset_stock, array &$stats): array
+function lzseed_apply_products(array $catalog, array $categories, bool $reset_stock, array &$stats): array
 {
     $ids = [];
     foreach ($catalog as $sku => $row) {
@@ -625,10 +786,6 @@ function lzseed_apply_products(array $catalog, array $categories, array $images,
                 if (strncmp($col, 'Meta: ', 6) === 0) {
                     $product->update_meta_data(substr($col, 6), $value);
                 }
-            }
-            $image = $images[$row['_categories'][0] ?? ''] ?? 0;
-            if ($image && !$product->get_image_id()) {
-                $product->set_image_id($image);
             }
             $ids[$sku] = $product->save();
             $stats[$id ? 'products_updated' : 'products_created']++;
@@ -831,8 +988,8 @@ if ($lz_opts['dry-run']) {
 add_filter('pre_wp_mail', '__return_false');
 wp_defer_term_counting(true);
 
-$lz_stats = array_fill_keys(['products_created', 'products_updated', 'customers_created', 'customers_existing',
-    'orders_created', 'orders_existing'], 0);
+$lz_stats = array_fill_keys(['products_created', 'products_updated', 'images_set', 'customers_created',
+    'customers_existing', 'orders_created', 'orders_existing'], 0);
 
 WP_CLI::log('==> Mağaza ayarları, ödeme ve teslimat');
 lzseed_apply_settings();
@@ -841,9 +998,12 @@ lzseed_apply_shipping();
 
 WP_CLI::log('==> Kategoriler ve ürünler (' . count($lz_catalog) . ')');
 $lz_categories = lzseed_apply_categories($lz_catalog);
-$lz_images     = $lz_opts['images'] ? lzseed_apply_placeholders($lz_categories) : [];
-$lz_products   = lzseed_apply_products($lz_catalog, $lz_categories, $lz_images, $lz_opts['reset-stock'], $lz_stats);
+$lz_products   = lzseed_apply_products($lz_catalog, $lz_categories, $lz_opts['reset-stock'], $lz_stats);
 lzseed_apply_menu($lz_categories);
+if ($lz_opts['images']) {
+    WP_CLI::log('==> Ürün ve kategori görselleri (seed/photos)');
+    lzseed_apply_images($lz_catalog, $lz_products, $lz_categories, $lz_stats);
+}
 wp_defer_term_counting(false);
 
 WP_CLI::log('==> Sentetik müşteriler ve siparişler');

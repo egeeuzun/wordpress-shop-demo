@@ -8,3 +8,7 @@ scripts/
 README.md
 *.jpg
 *.png
+# Ürün fotoğrafları imaja girer (seed kiti /usr/src/shop-seed/photos)
+!seed/photos/*.jpg
+!seed/photos/*.jpeg
+!seed/photos/*.png
