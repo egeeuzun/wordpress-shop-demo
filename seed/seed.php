@@ -384,6 +384,12 @@ function lzseed_apply_settings(): void
         'woocommerce_prices_include_tax'               => 'yes',
         'woocommerce_enable_guest_checkout'            => 'yes',
         'woocommerce_enable_signup_and_login_from_checkout' => 'yes',
+        // Hesabım sayfasında giriş + üye ol. Demo e-posta göndermediği için
+        // parolayı ziyaretçi kendisi belirler (otomatik parola e-postayla gider).
+        'woocommerce_enable_myaccount_registration'    => 'yes',
+        'woocommerce_registration_generate_username'   => 'yes',
+        'woocommerce_registration_generate_password'   => 'no',
+        'woocommerce_enable_checkout_login_reminder'   => 'yes',
         // Üst bant: WooCommerce'in yerleşik "demo mağaza" bildirimi
         'woocommerce_demo_store'                       => 'yes',
         'woocommerce_demo_store_notice'                => LZSEED_DEMO_NOTICE,

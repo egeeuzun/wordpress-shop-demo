@@ -205,9 +205,9 @@ body.admin-bar.shopdemo .site-header {
 
 body.shopdemo .site-header > .col-full {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
     align-items: center;
-    gap: 28px;
+    gap: 16px 20px;
     padding-top: 16px;
     padding-bottom: 16px;
 }
@@ -340,14 +340,63 @@ body.shopdemo .site-header-cart .cart-contents .count {
     margin-left: 0;
 }
 
+/* Mini sepet: Storefront onu ekran dışında (left: -999em) tutar ve yalnızca
+   üzerine gelinince açar. Konumu sadece açık haldeyken değiştiriyoruz. */
 body.shopdemo .site-header-cart .widget_shopping_cart {
     border-radius: var(--sd-radius);
     box-shadow: var(--sd-shadow-hover);
     background: #fff;
-    right: 0;
-    left: auto;
     width: 340px;
     overflow: hidden;
+}
+
+body.shopdemo .site-header-cart:hover .widget_shopping_cart,
+body.shopdemo .site-header-cart.focus .widget_shopping_cart,
+body.shopdemo .site-header-cart:focus-within .widget_shopping_cart {
+    left: auto;
+    right: 0;
+}
+
+body.shopdemo .site-header-cart .widget_shopping_cart_content {
+    padding: 16px;
+}
+
+body.shopdemo .site-header-cart .widget_shopping_cart .buttons {
+    display: flex;
+    gap: 8px;
+    margin: 12px 0 0;
+}
+
+body.shopdemo .site-header-cart .widget_shopping_cart .buttons .button {
+    flex: 1;
+    text-align: center;
+    margin: 0;
+}
+
+/* Hesap / giriş linki */
+body.shopdemo .shopdemo-account {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 16px;
+    border: 1px solid var(--sd-line);
+    border-radius: 999px;
+    color: var(--sd-ink);
+    font-weight: 700;
+    white-space: nowrap;
+    transition: border-color .15s ease, background-color .15s ease;
+}
+
+body.shopdemo .shopdemo-account:hover {
+    border-color: var(--sd-green);
+    background: var(--sd-green-50);
+    color: var(--sd-green-dark);
+}
+
+body.shopdemo .shopdemo-account svg {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 auto;
 }
 
 /* Kategori çipleri */
@@ -1171,7 +1220,8 @@ body.shopdemo .storefront-handheld-footer-bar ul li.cart .count {
         padding-bottom: 8px;
     }
 
-    /* Mobilde sepet ve arama alttaki sabit çubukta */
+    /* Mobilde hesap, sepet ve arama alttaki sabit çubukta */
+    body.shopdemo .site-header .shopdemo-account,
     body.shopdemo .site-header .site-header-cart,
     body.shopdemo .site-header .site-search {
         display: none;
