@@ -9,3 +9,4 @@ imagedefinitions.json
 !seed/photos/*.jpg
 !seed/photos/*.jpeg
 !seed/photos/*.png
+__pycache__/
