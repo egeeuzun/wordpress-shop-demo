@@ -4,7 +4,7 @@
  *
  * İmaja /usr/src/shop-seed/ altında gömülüdür; WP-CLI ile konteyner içinden
  * çalışır (lokalde docker compose exec, AWS'de ECS Exec). REST API anahtarı
- * gerekmez, dış servise istek atmaz:
+ * gerekmez:
  *
  *   wp eval-file /usr/src/shop-seed/seed.php [dry-run] [orders=300] [customers=150]
  *                [seed=2026] [no-images] [reset-stock] [customer-pass=demo123]
@@ -68,7 +68,17 @@ const LZSEED_NOTES = ['Zili çalmayın, lütfen telefonla arayın.', 'Kapıcıya
 // Sepette kategori ağırlığı: taze ürün ve kahvaltılık daha sık alınır
 const LZSEED_CATEGORY_WEIGHT = ['meyve-sebze' => 5, 'sut-kahvaltilik' => 5, 'temel-gida' => 4,
     'et-tavuk' => 3, 'icecek' => 3, 'atistirmalik' => 3, 'temizlik' => 2, 'kisisel-bakim' => 2, 'bebek' => 1];
-// Placeholder görseller için kategori renkleri (düz renk, metin/marka yok)
+// Kategori fotoğrafları (uzaktan indirilir); başarısız olursa düz renk placeholder kullanılır.
+const LZSEED_CATEGORY_PHOTO_URLS = ['meyve-sebze' => 'https://picsum.photos/seed/lz-meyve-sebze/1200/1200.jpg',
+    'sut-kahvaltilik' => 'https://picsum.photos/seed/lz-sut-kahvaltilik/1200/1200.jpg',
+    'et-tavuk' => 'https://picsum.photos/seed/lz-et-tavuk/1200/1200.jpg',
+    'temel-gida' => 'https://picsum.photos/seed/lz-temel-gida/1200/1200.jpg',
+    'atistirmalik' => 'https://picsum.photos/seed/lz-atistirmalik/1200/1200.jpg',
+    'icecek' => 'https://picsum.photos/seed/lz-icecek/1200/1200.jpg',
+    'temizlik' => 'https://picsum.photos/seed/lz-temizlik/1200/1200.jpg',
+    'kisisel-bakim' => 'https://picsum.photos/seed/lz-kisisel-bakim/1200/1200.jpg',
+    'bebek' => 'https://picsum.photos/seed/lz-bebek/1200/1200.jpg'];
+// Fallback placeholder renkleri (düz renk, metin/marka yok)
 const LZSEED_COLORS = ['meyve-sebze' => '#7cb342', 'sut-kahvaltilik' => '#f5f0e1', 'et-tavuk' => '#c0504d',
     'temel-gida' => '#d9a441', 'atistirmalik' => '#e8833a', 'icecek' => '#4a90c2', 'temizlik' => '#5bc0be',
     'kisisel-bakim' => '#b48ec9', 'bebek' => '#f2b5c4'];
@@ -507,7 +517,7 @@ function lzseed_apply_categories(array $catalog): array
 }
 
 /**
- * Kategori başına düz renkli PNG placeholder (marka/ürün görseli yok).
+ * Kategori başına gerçek fotoğraf dener; indirilemezse düz renk placeholder üretir.
  * Medya kütüphanesine yüklenir; S3 offload açıksa bucket'a da gider.
  *
  * @return array<string,int> kategori adı => attachment id
@@ -527,27 +537,54 @@ function lzseed_apply_placeholders(array $categories): array
         $slug     = sanitize_title($name);
         $existing = get_posts([
             'post_type' => 'attachment', 'post_status' => 'inherit', 'numberposts' => 1, 'fields' => 'ids',
-            'meta_key' => '_lz_placeholder', 'meta_value' => $slug,
+            'meta_key' => '_lz_category_image', 'meta_value' => $slug,
         ]);
+        if (!$existing) {
+            $existing = get_posts([
+                'post_type' => 'attachment', 'post_status' => 'inherit', 'numberposts' => 1, 'fields' => 'ids',
+                'meta_key' => '_lz_placeholder', 'meta_value' => $slug, // eski seed sürümüyle uyumluluk
+            ]);
+        }
         if ($existing) {
             $map[$name] = (int) $existing[0];
         } else {
-            [$r, $g, $b] = sscanf(LZSEED_COLORS[$slug] ?? '#9e9e9e', '#%02x%02x%02x');
-            $img = imagecreatetruecolor(800, 800);
-            imagefill($img, 0, 0, imagecolorallocate($img, $r, $g, $b));
-            // Ortada açık tonlu daire: ızgarada düz kareden daha okunur
-            imagefilledellipse($img, 400, 400, 420, 420, imagecolorallocatealpha($img, 255, 255, 255, 80));
-            $tmp = wp_tempnam("lz-$slug.png");
-            imagepng($img, $tmp);
-            imagedestroy($img);
-
-            $id = media_handle_sideload(['name' => "lz-placeholder-$slug.png", 'tmp_name' => $tmp], 0, "$name (placeholder)");
-            if (is_wp_error($id)) {
-                @unlink($tmp);
-                WP_CLI::warning("Placeholder yüklenemedi ($name): " . $id->get_error_message());
-                continue;
+            $photo_url = LZSEED_CATEGORY_PHOTO_URLS[$slug] ?? '';
+            $id        = 0;
+            if ($photo_url) {
+                $tmp = download_url($photo_url, 30);
+                if (is_wp_error($tmp)) {
+                    WP_CLI::warning("Kategori fotoğrafı indirilemedi ($name): " . $tmp->get_error_message());
+                } else {
+                    $id = media_handle_sideload(['name' => "lz-photo-$slug.jpg", 'tmp_name' => $tmp], 0, $name);
+                    if (is_wp_error($id)) {
+                        @unlink($tmp);
+                        WP_CLI::warning("Kategori fotoğrafı yüklenemedi ($name): " . $id->get_error_message());
+                        $id = 0;
+                    }
+                }
             }
-            update_post_meta($id, '_lz_placeholder', $slug);
+            if (!$id) {
+                [$r, $g, $b] = sscanf(LZSEED_COLORS[$slug] ?? '#9e9e9e', '#%02x%02x%02x');
+                $img = imagecreatetruecolor(800, 800);
+                imagefill($img, 0, 0, imagecolorallocate($img, $r, $g, $b));
+                // Ortada açık tonlu daire: ızgarada düz kareden daha okunur
+                imagefilledellipse($img, 400, 400, 420, 420, imagecolorallocatealpha($img, 255, 255, 255, 80));
+                $tmp = wp_tempnam("lz-$slug.png");
+                imagepng($img, $tmp);
+                imagedestroy($img);
+
+                $id = media_handle_sideload(['name' => "lz-placeholder-$slug.png", 'tmp_name' => $tmp], 0, "$name (placeholder)");
+                if (is_wp_error($id)) {
+                    @unlink($tmp);
+                    WP_CLI::warning("Placeholder yüklenemedi ($name): " . $id->get_error_message());
+                    continue;
+                }
+                update_post_meta($id, '_lz_image_type', 'placeholder');
+            } else {
+                update_post_meta($id, '_lz_image_type', 'photo');
+            }
+            update_post_meta($id, '_lz_category_image', $slug);
+            update_post_meta($id, '_lz_placeholder', $slug); // geri uyumluluk
             $map[$name] = (int) $id;
         }
         update_term_meta($term_id, 'thumbnail_id', $map[$name]); // Storefront "Kategoriler" bölümü
