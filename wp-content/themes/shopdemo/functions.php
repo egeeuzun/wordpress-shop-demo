@@ -72,10 +72,8 @@ add_action('init', function () {
     remove_action('storefront_header', 'storefront_header_cart', 60);
     add_action('storefront_header', 'storefront_header_cart', 40);
 
-    // Puan/satış verisi olmadığı için "popüler" ve "çok satan" bölümleri yok;
-    // indirimler kategorilerin hemen altında
-    remove_action('homepage', 'storefront_popular_products', 50);
-    remove_action('homepage', 'storefront_best_selling_products', 70);
+    // İndirimler kategorilerin hemen altında. "En beğenilenler" ve "Çok
+    // satanlar" seed'in değerlendirme ve siparişlerinden dolar.
     remove_action('homepage', 'storefront_on_sale_products', 60);
     add_action('homepage', 'storefront_on_sale_products', 25);
 });
@@ -87,6 +85,8 @@ add_filter('storefront_product_categories_args', fn($a) => array_merge($a, ['lim
 add_filter('storefront_on_sale_products_args', fn($a) => array_merge($a, ['limit' => 8, 'columns' => 4, 'title' => 'İndirimdekiler']));
 add_filter('storefront_featured_products_args', fn($a) => array_merge($a, ['limit' => 8, 'columns' => 4, 'title' => 'Öne çıkanlar']));
 add_filter('storefront_recent_products_args', fn($a) => array_merge($a, ['limit' => 8, 'columns' => 4, 'title' => 'Yeni gelenler']));
+add_filter('storefront_popular_products_args', fn($a) => array_merge($a, ['limit' => 4, 'columns' => 4, 'title' => 'En beğenilenler']));
+add_filter('storefront_best_selling_products_args', fn($a) => array_merge($a, ['limit' => 4, 'columns' => 4, 'title' => 'Çok satanlar']));
 add_action('storefront_homepage_before_on_sale_products', fn() => print('<span id="indirimler" class="shopdemo-anchor"></span>'));
 
 // Mağaza sayfasında satırda 4 ürün, sayfada 24 ürün
