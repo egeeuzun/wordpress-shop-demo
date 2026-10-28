@@ -39,7 +39,9 @@ docker compose up -d --build
 ./scripts/seed-demo.sh dry-run > plan.json      # preview, writes nothing
 ```
 
-On AWS, in a running ECS task (WordPress installed, WooCommerce active):
+On AWS the container runs it by itself at start-up when `SHOP_AUTO_SEED=1`
+(see [Filling the store on AWS](../README.md#filling-the-store-on-aws)). By
+hand, in a running ECS task (WordPress installed, WooCommerce active):
 
 ```bash
 aws ecs execute-command --cluster <CLUSTER> --task <TASK_ID> --container wordpress \

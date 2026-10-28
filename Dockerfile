@@ -76,6 +76,12 @@ COPY docker/php-overrides.ini /usr/local/etc/php/conf.d/zz-overrides.ini
 # lokalde scripts/seed-demo.sh, AWS'de ECS Exec ile çalıştırılır:
 #   wp eval-file /usr/src/shop-seed/seed.php
 COPY seed/ /usr/src/shop-seed/
+# Seed kitinin içerik özeti: otomatik kurulum (SHOP_AUTO_SEED=1) bunu
+# veritabanındaki shop_seed_version ile karşılaştırır, kit değişmediyse
+# seed'i tekrar çalıştırmaz.
+RUN cd /usr/src/shop-seed \
+    && find . -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | cut -c1-16 > .version
+COPY docker/auto-seed.php /usr/local/bin/shop-auto-seed.php
 
 COPY docker/entrypoint.sh /usr/local/bin/shop-entrypoint.sh
 # wp-admin üzerinden eklenti/tema kurulumu için WordPress'in yazabilmesi gereken
