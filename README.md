@@ -15,9 +15,15 @@ and no real payments. Nothing is sold.
   (`LZ-0001`…), price, stock, weight and unit. A few are on sale. Each product
   has its own freely licensed photo (Wikimedia Commons), stored in the repo
   (`seed/photos/`); see [`seed/README.md`](seed/README.md#product-photos).
-- **150 customers and 300 orders** from the last 90 days. Names, Istanbul
-  addresses, `+90 5xx` phone numbers and `@example.com` e-mails are all
-  randomly generated.
+- **150 customers and about 330 orders** from the last 90 days. Every
+  registered customer has at least one order. Names, Istanbul addresses,
+  `+90 5xx` phone numbers and `@example.com` e-mails are all randomly
+  generated.
+- **About 200 product reviews** with star ratings, each written by a customer
+  who bought and received that product ("verified owner"). The store replies to
+  most 1–2 star reviews, and a few recent reviews wait for approval in wp-admin.
+  The homepage shows "En beğenilenler" (top rated) and "Çok satanlar" (best
+  sellers) from this data.
 - **A national ID (TCKN) on every order.** Turkish shops often ask for it to
   issue e-invoices, so it gives the project a realistic piece of sensitive
   data to track. The numbers are random; they just pass the checksum rule.
@@ -39,7 +45,7 @@ docker compose up -d --build
 - **Store:** http://localhost:8080
 - **Admin:** http://localhost:8080/wp-admin (`admin` / `admin123`)
 
-`seed-demo.sh` installs WordPress in Turkish, then fills the store. You can run it again: it skips products, customers and orders that
+`seed-demo.sh` installs WordPress in Turkish, then fills the store. You can run it again: it skips products, customers, orders and reviews that
 already exist, so nothing is duplicated.
 
 ```bash
@@ -124,7 +130,7 @@ CI/CD: GitHub → CodeBuild → CodePipeline → ECR → ECS
 │   └── mu-plugins/          # S3 auto-activation, CDN redirect, XML-RPC off, store rules (offline payments, TCKN)
 ├── seed/                    # Demo data kit baked into the image (/usr/src/shop-seed)
 │   ├── products.csv         # 86 grocery products (WooCommerce CSV importer format)
-│   └── seed.php             # WP-CLI seeder: store setup, catalog, synthetic customers & orders
+│   └── seed.php             # WP-CLI seeder: store setup, catalog, synthetic customers, orders & reviews
 ├── scripts/seed-demo.sh     # Local setup: core install (Turkish) + seed.php
 └── ecs/
     ├── taskdef.example.json      # ECS Task Definition template

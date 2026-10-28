@@ -1,13 +1,14 @@
 # Seed kit — Yerel Market demo data
 
-This kit fills the store with fake grocery data: products, customers and
-orders. The personal data it creates (names, addresses, phone numbers, national
-IDs) is what the Residency Guard checks later look for.
+This kit fills the store with fake grocery data: products, customers, orders
+and product reviews. The personal data it creates (names, addresses, phone
+numbers, national IDs, reviewers' e-mails and IP addresses) is what the
+Residency Guard checks later look for.
 
 | File | What it is |
 | --- | --- |
 | `products.csv` | 86 products in 9 categories, SKUs `LZ-0001`…`LZ-0086`. 11 on sale, 9 featured, 1 out of stock. |
-| `seed.php` | The script that sets up the store and creates the products, customers and orders. |
+| `seed.php` | The script that sets up the store and creates the products, customers, orders and reviews. |
 
 The kit is built into the image at `/usr/src/shop-seed/` (outside the web root)
 and runs with WP-CLI inside the container. It needs no API keys.
@@ -23,6 +24,8 @@ and runs with WP-CLI inside the container. It needs no API keys.
   photos (see [Product photos](#product-photos)); none should show a logo.
 - **No real payments.** Only Cash on Delivery and Bank Transfer are offered, and
   the bank account (IBAN) shown is invalid on purpose.
+- **Reviewer IP addresses are fake.** They come from the ranges reserved for
+  documentation (`192.0.2.0/24`, `198.51.100.0/24`, `203.0.113.0/24`, RFC 5737).
 - **No e-mails are sent** while the script runs.
 
 ## How to run it
@@ -31,7 +34,7 @@ Locally:
 
 ```bash
 docker compose up -d --build
-./scripts/seed-demo.sh                          # 150 customers, 300 orders
+./scripts/seed-demo.sh                          # 150 customers, ~330 orders, ~200 reviews
 ./scripts/seed-demo.sh orders=500 customers=200 # more data
 ./scripts/seed-demo.sh dry-run > plan.json      # preview, writes nothing
 ```
@@ -55,7 +58,7 @@ Options are written as `name=value` (WP-CLI's `eval-file` does not accept
 | Option | Default | What it does |
 | --- | --- | --- |
 | `dry-run` | — | Prints the planned data as JSON and writes nothing. |
-| `orders=N` | `300` | Number of orders, spread over the last 90 days. |
+| `orders=N` | `300` | Number of orders, spread over the last 90 days. Customers left without one get a first order on top (about 30 more by default). `orders=0` creates none. |
 | `customers=N` | `150` | Number of registered customers. About 15% of orders are guest orders. |
 | `seed=N` | `2026` | Random seed. The same seed always gives the same customers and orders. |
 | `no-images` | — | Skip product and category images. |
@@ -77,7 +80,16 @@ Options are written as `name=value` (WP-CLI's `eval-file` does not accept
   for testing "My account" and order history.
 - **Customers and orders:** completed, processing, on-hold (waiting for a bank
   transfer) and cancelled orders. The newest orders are mostly still
-  processing. Orders lower the stock, just like real ones.
+  processing. Orders lower the stock, just like real ones. A few loyal
+  customers order often; every registered customer has at least one order.
+- **Reviews:** star ratings with a short Turkish comment on completed orders,
+  written some days after delivery by the customer who placed the order
+  (registered customers and a few guests). At most one review per person and
+  product. Ratings lean positive, as in real shops (about half are 5 stars).
+  The store ("Yerel Market", the admin user) replies to most 1–2 star reviews.
+  Some reviews from the last week are left pending, so the moderation queue in
+  wp-admin is not empty. Reviews are switched on with stars required, and only
+  customers who bought a product can review it.
 
 ## Where the personal data ends up
 
@@ -90,16 +102,21 @@ All of it is in the WordPress database:
 | Order addresses, phone, e-mail | `wp_wc_orders`, `wp_wc_order_addresses` |
 | Order TCKN | `wp_wc_orders_meta`, key `_billing_tckn` |
 | Copies used by WooCommerce reports | `wp_wc_customer_lookup`, `wp_wc_order_stats` |
+| Reviewer name, e-mail, IP address, browser | `wp_comments` (`comment_author*`, `comment_agent`), `comment_type = review` |
 
 Records made by the script are tagged: orders have `created_via = lz-seed` and
-`_lz_seed_ref` (`LZ-S-0001`…), customers have `lz_seed_ref` (`LZ-C-0001`…).
+`_lz_seed_ref` (`LZ-S-0001`…), customers have `lz_seed_ref` (`LZ-C-0001`…),
+reviews have the comment meta `_lz_seed_ref` (`<order ref>/<SKU>`, replies end
+in `/yanit`).
 Orders placed through the real checkout store the TCKN under the same
 `_billing_tckn` key.
 
 ## Running it again
 
 It is safe to run the script more than once. Products are matched by SKU,
-customers by e-mail and orders by `_lz_seed_ref`, so nothing is duplicated. If
+customers by e-mail, orders and reviews by `_lz_seed_ref`, so nothing is
+duplicated. A store seeded with an older version of the kit keeps its orders
+and gets the new first orders and the reviews on the next run. If
 you change a name, price or description in the CSV, the next run updates that
 product. Stock is left alone (orders have already lowered it) unless you pass
 `reset-stock`.
