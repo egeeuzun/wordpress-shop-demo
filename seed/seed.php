@@ -1,6 +1,7 @@
 <?php
 /**
- * Yerel Market — demo mağaza seed'i (Faz 2: WooCommerce'i demo verilerle doldur).
+ * Yerel Market — demo mağaza seed'i (Faz 2: WooCommerce'i demo verilerle doldur):
+ * katalog, müşteriler, siparişler ve ürün değerlendirmeleri.
  *
  * İmaja /usr/src/shop-seed/ altında gömülüdür; WP-CLI ile konteyner içinden
  * çalışır (lokalde docker compose exec, AWS'de ECS Exec). REST API anahtarı
@@ -17,9 +18,11 @@
  *    gerçek bir kişiyle ilişkilendirilmemiştir. Siparişte `_billing_tckn`,
  *    kullanıcıda `billing_tckn` meta'sında durur.
  *  - Ödeme yalnızca Kapıda Ödeme / Havale; kart verisi yok.
+ *  - Değerlendirmeleri ürünü satın alan müşteriler yazar; IP'ler RFC 5737
+ *    belgeleme aralıklarından (wp_comments.comment_author_IP).
  *
- * İdempotent: ürünler SKU'ya, müşteriler e-postaya, siparişler `_lz_seed_ref`
- * meta'sına göre eşlenir; tekrar çalıştırınca çoğaltmaz. Aynı `seed` değeri
+ * İdempotent: ürünler SKU'ya, müşteriler e-postaya, siparişler ve
+ * değerlendirmeler `_lz_seed_ref` meta'sına göre eşlenir; tekrar çalıştırınca çoğaltmaz. Aynı `seed` değeri
  * aynı müşteri/sipariş planını üretir (tarihler çalıştırma anına göredir).
  * Var olan ürünlerin katalog alanları CSV'den güncellenir, stok korunur
  * (siparişler stok düşürdüğü için); CSV stoğuna dönmek için `reset-stock`.
@@ -65,6 +68,48 @@ const LZSEED_NOTES = ['Zili çalmayın, lütfen telefonla arayın.', 'Kapıcıya
     'Poşetsiz teslim edilsin lütfen.', "Akşam 19:00'dan sonra teslim edin.",
     'Domatesler çok olgun olmasın.', 'Kapıda kartla ödeyeceğim.', 'Bozuk para yok, üstünü getirin lütfen.',
     'Apartmanın arka kapısını kullanın.'];
+// Ürün değerlendirmeleri, puana göre. Kişisel bilgi (isim, adres, telefon) içermez.
+const LZSEED_REVIEWS = [
+    5 => ['Çok memnun kaldım, tekrar alacağım.', 'Fiyatına göre gayet kaliteli.', 'Paketleme özenliydi, teşekkürler.',
+        'Her hafta alıyorum, hiç sorun yaşamadım.', 'Beklediğimden iyi çıktı.', 'Teslimat hızlıydı, ürün sorunsuz.',
+        'Tam aradığım gibi.', 'Ailece çok beğendik.', 'Kalitesi her seferinde aynı, güvenle alıyorum.',
+        'Market rafındakinden daha taze geldi.', 'Kesinlikle tavsiye ederim.', 'Fiyat/performans ürünü.'],
+    4 => ['Güzel ama biraz pahalı.', 'Kaliteli, sadece paketi biraz ezik geldi.', 'Genel olarak memnunum.',
+        'İyi ürün, bir dahakine daha büyük boyunu alacağım.', 'Teslimat biraz gecikti ama ürün iyi.',
+        'Beğendim, indirimdeyken almak daha mantıklı.', 'Gayet iyi, küçük bir eksiği var ama idare eder.',
+        'Önceki aldığım markadan daha iyi.'],
+    3 => ['İdare eder, beklentimi tam karşılamadı.', 'Ortalama bir ürün.', 'Fena değil ama daha iyisini denedim.',
+        'Bu sefer öncekiler kadar iyi değildi.', 'Fiyatına göre normal.', 'Kötü değil, tekrar alır mıyım bilmiyorum.'],
+    2 => ['Beklediğim gibi değildi.', 'Son kullanma tarihine çok az kalmıştı.', 'Paket hasarlı geldi.',
+        'Fotoğraftakinden farklı geldi.', 'Bu fiyata daha iyisini bulmak mümkün.'],
+    1 => ['Bozuk geldi, kullanamadım.', 'Ezilmiş geldi, hiç memnun kalmadım.', 'Ürün eksik geldi.',
+        'Bir daha almayacağım.'],
+];
+// 4–5 yıldızlı değerlendirmelere eklenen kategoriye özgü cümleler
+const LZSEED_REVIEW_DETAILS = [
+    'meyve-sebze'     => ['Tazeydi, iki gün sonra bile ilk günkü gibiydi.', 'Tadı tam yerinde, kokusu bile güzel.', 'Boyları birbirine yakın ve temiz geldi.'],
+    'sut-kahvaltilik' => ['Kahvaltı sofrasının vazgeçilmezi oldu.', 'Son kullanma tarihi uzun geldi.', 'Kıvamı ve tadı çok iyi.'],
+    'et-tavuk'        => ['Soğuk zincir bozulmadan geldi.', 'Yağ oranı az, temiz kesilmiş.', 'Pişince suyunu salmadı.'],
+    'temel-gida'      => ['Mutfakta hep bulunduruyorum.', 'Kalitesi tutarlı.', 'Ambalajı ağzı kapanabilir, pratik.'],
+    'atistirmalik'    => ['Çocuklar çok sevdi.', 'Film gecesi için ideal.', 'Çok tatlı değil, tam kıvamında.'],
+    'icecek'          => ['Soğuk servis edince harika.', 'Şişesi sağlam geldi.', 'Tadı yapay değil.'],
+    'temizlik'        => ['Kokusu hoş, iyi temizliyor.', 'Az miktarı yetiyor, idareli.', 'Lekeleri ilk seferde çıkardı.'],
+    'kisisel-bakim'   => ['Cildimi kurutmadı.', 'Kokusu hafif ve güzel.', 'Uzun süre idare ediyor.'],
+    'bebek'           => ['Bebeğimde pişik yapmadı.', 'Hassas cilde uygun.', 'Kalıbı tam oturuyor.'],
+];
+// Mağazanın 1–2 yıldızlı değerlendirmelere yanıtı; %s = müşterinin adı
+const LZSEED_REVIEW_REPLIES = [
+    'Merhaba %s, yaşadığınız sorun için özür dileriz. Bildiriminizi tedarik ekibimize ilettik.',
+    'Merhaba %s, geri bildiriminiz için teşekkürler. Bir sonraki siparişinizde bu ürünü özellikle kontrol edeceğiz.',
+    'Merhaba %s, bu deneyim bizim standartlarımıza uymuyor. Müşteri hizmetlerimiz sizinle iletişime geçecek.',
+];
+// Değerlendirmenin gönderildiği tarayıcı (wp_comments.comment_agent)
+const LZSEED_AGENTS = [
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1',
+    'Mozilla/5.0 (Linux; Android 15; SM-A556E) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Safari/605.1.15',
+];
 // Sepette kategori ağırlığı: taze ürün ve kahvaltılık daha sık alınır
 const LZSEED_CATEGORY_WEIGHT = ['meyve-sebze' => 5, 'sut-kahvaltilik' => 5, 'temel-gida' => 4,
     'et-tavuk' => 3, 'icecek' => 3, 'atistirmalik' => 3, 'temizlik' => 2, 'kisisel-bakim' => 2, 'bebek' => 1];
@@ -286,36 +331,7 @@ function lzseed_plan(array $catalog, array $o, int $now): array
             $person['email'] = sprintf('%s.%s.m%04d@example.com', lzseed_ascii($person['first_name']), lzseed_ascii($person['last_name']), $i + 1);
         }
 
-        $want  = lzseed_pick([1, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 6, 7, 8]);
-        $items = [];
-        for ($try = 0; count($items) < $want && $try < 50; $try++) {
-            $sku = lzseed_pick($pool);
-            if (!isset($items[$sku])) {
-                $items[$sku] = lzseed_pick([1, 1, 1, 1, 2, 2, 3]);
-            }
-        }
-
-        $payment = lzseed_chance(0.7) ? 'cod' : 'bacs';
-        $age     = ($now - $ts) / DAY_IN_SECONDS;
-        $roll    = mt_rand(1, 100);
-        if ($age < 1) {
-            $status = $roll <= 5 ? 'cancelled' : (($payment === 'bacs' && $roll <= 55) ? 'on-hold' : 'processing');
-        } elseif ($age < 3) {
-            $status = $roll <= 10 ? 'cancelled' : ($roll <= 50 ? 'processing' : 'completed');
-        } else {
-            $status = $roll <= 12 ? 'cancelled' : 'completed';
-        }
-
-        $orders[] = [
-            'ts'           => $ts,
-            'customer'     => $customer,
-            'guest'        => $person,
-            'items'        => $items,
-            'payment'      => $payment,
-            'status'       => $status,
-            'completed_ts' => $status === 'completed' ? min($now, $ts + mt_rand(3 * 3600, 36 * 3600)) : null,
-            'note'         => lzseed_chance(0.12) ? lzseed_pick(LZSEED_NOTES) : '',
-        ];
+        $orders[] = ['ts' => $ts, 'customer' => $customer, 'guest' => $person] + lzseed_plan_basket($pool, $ts, $now);
     }
     usort($orders, fn($a, $b) => $a['ts'] <=> $b['ts']);
     foreach ($orders as $i => &$order) {
@@ -335,7 +351,120 @@ function lzseed_plan(array $catalog, array $o, int $now): array
     }
     unset($c);
 
-    return ['customers' => $customers, 'orders' => $orders];
+    // Yukarıdaki dağılımda sadık müşteriler çok sipariş verir, kuyruktakilerin
+    // bir kısmına hiç sipariş düşmez. Onlara kayıttan sonra birer ilk sipariş.
+    // Ana plandan sonra üretildiği için önceki siparişler ve referansları
+    // değişmez; yeniler LZ-S-<orders+1>'den devam eder.
+    if ($o['orders'] > 0) {
+        $next = count($orders);
+        foreach ($customers as $i => $c) {
+            if (isset($first[$i])) {
+                continue;
+            }
+            $ts  = mt_rand($c['registered_ts'] + HOUR_IN_SECONDS, $now - 300);
+            $day = (new DateTimeImmutable("@$ts"))->setTimezone($tz)->setTime(mt_rand(8, 22), mt_rand(0, 59), mt_rand(0, 59))->getTimestamp();
+            if ($day > $c['registered_ts'] && $day < $now) {
+                $ts = $day;
+            }
+            $orders[] = ['ts' => $ts, 'customer' => $i, 'guest' => null]
+                + lzseed_plan_basket($pool, $ts, $now)
+                + ['ref' => sprintf('LZ-S-%04d', ++$next)];
+        }
+        usort($orders, fn($a, $b) => $a['ts'] <=> $b['ts']);
+    }
+
+    return ['customers' => $customers, 'orders' => $orders, 'reviews' => lzseed_plan_reviews($catalog, $customers, $orders, $now)];
+}
+
+/** Sepet, ödeme yöntemi, sipariş yaşına göre durum ve teslimat notu. */
+function lzseed_plan_basket(array $pool, int $ts, int $now): array
+{
+    $want  = lzseed_pick([1, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 6, 7, 8]);
+    $items = [];
+    for ($try = 0; count($items) < $want && $try < 50; $try++) {
+        $sku = lzseed_pick($pool);
+        if (!isset($items[$sku])) {
+            $items[$sku] = lzseed_pick([1, 1, 1, 1, 2, 2, 3]);
+        }
+    }
+
+    $payment = lzseed_chance(0.7) ? 'cod' : 'bacs';
+    $age     = ($now - $ts) / DAY_IN_SECONDS;
+    $roll    = mt_rand(1, 100);
+    if ($age < 1) {
+        $status = $roll <= 5 ? 'cancelled' : (($payment === 'bacs' && $roll <= 55) ? 'on-hold' : 'processing');
+    } elseif ($age < 3) {
+        $status = $roll <= 10 ? 'cancelled' : ($roll <= 50 ? 'processing' : 'completed');
+    } else {
+        $status = $roll <= 12 ? 'cancelled' : 'completed';
+    }
+
+    return [
+        'items'        => $items,
+        'payment'      => $payment,
+        'status'       => $status,
+        'completed_ts' => $status === 'completed' ? min($now, $ts + mt_rand(3 * 3600, 36 * 3600)) : null,
+        'note'         => lzseed_chance(0.12) ? lzseed_pick(LZSEED_NOTES) : '',
+    ];
+}
+
+/**
+ * Ürün değerlendirmeleri: yalnızca tamamlanmış siparişlerden, ürünü gerçekten
+ * alan kişi yazar (doğrulanmış alıcı). Kişi başına ürün başına en fazla bir
+ * değerlendirme. Puanlar gerçek mağazalardaki gibi olumluya yığılı; 1–2
+ * yıldızların çoğuna mağaza yanıt verir. Son bir haftadakilerin bir kısmı
+ * onay bekler (wp-admin'de moderasyon kuyruğu boş kalmasın).
+ */
+function lzseed_plan_reviews(array $catalog, array $customers, array $orders, int $now): array
+{
+    $reviews = [];
+    $seen    = [];
+    foreach ($orders as $order) {
+        if ($order['status'] !== 'completed') {
+            continue;
+        }
+        $person = $order['customer'] !== null ? $customers[$order['customer']] : $order['guest'];
+        foreach ($order['items'] as $sku => $qty) {
+            $key = $person['email'] . '|' . $sku;
+            if (isset($seen[$key]) || !lzseed_chance($order['customer'] !== null ? 0.25 : 0.08)) {
+                continue;
+            }
+            $ts = $order['completed_ts'] + mt_rand(2 * HOUR_IN_SECONDS, 10 * DAY_IN_SECONDS);
+            if ($ts > $now) {
+                continue;
+            }
+            $seen[$key] = true;
+
+            $rating = lzseed_pick([5, 5, 5, 5, 5, 5, 5, 5, 5, 4, 4, 4, 4, 4, 4, 3, 3, 3, 2, 2, 1]);
+            $text   = lzseed_pick(LZSEED_REVIEWS[$rating]);
+            $slug   = sanitize_title($catalog[$sku]['_categories'][0] ?? '');
+            if ($rating >= 4 && isset(LZSEED_REVIEW_DETAILS[$slug]) && lzseed_chance(0.6)) {
+                $text .= ' ' . lzseed_pick(LZSEED_REVIEW_DETAILS[$slug]);
+            }
+            $approved = ($now - $ts < 7 * DAY_IN_SECONDS && lzseed_chance(0.3)) ? 0 : 1;
+
+            $reviews[] = [
+                'ref'      => $order['ref'] . '/' . $sku,
+                'sku'      => $sku,
+                'order'    => $order['ref'],
+                'customer' => $order['customer'],
+                'author'   => $person['first_name'] . ' ' . mb_substr($person['last_name'], 0, 1) . '.',
+                'email'    => $person['email'],
+                'rating'   => $rating,
+                'text'     => $text,
+                'ts'       => $ts,
+                'approved' => $approved,
+                // RFC 5737 belgeleme aralıkları: gerçek bir istemciye ait olamaz
+                'ip'       => lzseed_pick(['192.0.2', '198.51.100', '203.0.113']) . '.' . mt_rand(1, 254),
+                'agent'    => lzseed_pick(LZSEED_AGENTS),
+                'reply'    => ($approved && $rating <= 2 && lzseed_chance(0.7)) ? [
+                    'ts'   => min($now, $ts + mt_rand(2 * HOUR_IN_SECONDS, 2 * DAY_IN_SECONDS)),
+                    'text' => sprintf(lzseed_pick(LZSEED_REVIEW_REPLIES), $person['first_name']),
+                ] : null,
+            ];
+        }
+    }
+    return $reviews;
 }
 
 // ---------------------------------------------------------------------------
@@ -380,6 +509,13 @@ function lzseed_apply_settings(): void
         'woocommerce_registration_generate_username'   => 'yes',
         'woocommerce_registration_generate_password'   => 'no',
         'woocommerce_enable_checkout_login_reminder'   => 'yes',
+        // Değerlendirmeler: yıldız zorunlu, yalnızca ürünü satın alan yazabilir
+        // (seed'in değerlendirmelerinin hepsi doğrulanmış alıcıdan)
+        'woocommerce_enable_reviews'                   => 'yes',
+        'woocommerce_enable_review_rating'             => 'yes',
+        'woocommerce_review_rating_required'           => 'yes',
+        'woocommerce_review_rating_verification_label' => 'yes',
+        'woocommerce_review_rating_verification_required' => 'yes',
         // Üst bant: WooCommerce'in yerleşik "demo mağaza" bildirimi
         'woocommerce_demo_store'                       => 'yes',
         'woocommerce_demo_store_notice'                => LZSEED_DEMO_NOTICE,
@@ -948,6 +1084,81 @@ function lzseed_apply_orders(array $plan, array $products, array $users, array &
     $progress->finish();
 }
 
+/**
+ * Plandaki değerlendirmeleri ve mağaza yanıtlarını yazar; `_lz_seed_ref`
+ * (sipariş ref'i/SKU) ile eşlenir, tekrar çalıştırınca çoğaltmaz.
+ */
+function lzseed_apply_reviews(array $plan, array $products, array $users, array &$stats): void
+{
+    $existing = [];
+    foreach (get_comments(['meta_key' => '_lz_seed_ref', 'status' => 'all', 'post_type' => 'product', 'number' => 0]) as $c) {
+        $existing[get_comment_meta($c->comment_ID, '_lz_seed_ref', true)] = (int) $c->comment_ID;
+    }
+    $admin   = get_users(['role' => 'administrator', 'number' => 1, 'orderby' => 'ID', 'fields' => 'ID']);
+    $touched = [];
+
+    $insert = function (array $data, array $meta, int $ts) {
+        return wp_insert_comment($data + [
+            'comment_type'     => 'review',
+            'comment_date'     => get_date_from_gmt(gmdate('Y-m-d H:i:s', $ts)),
+            'comment_date_gmt' => gmdate('Y-m-d H:i:s', $ts),
+            'comment_meta'     => $meta,
+        ]);
+    };
+
+    wp_defer_comment_counting(true);
+    $progress = WP_CLI\Utils\make_progress_bar('Değerlendirmeler', count($plan['reviews']));
+    foreach ($plan['reviews'] as $r) {
+        $progress->tick();
+        $product_id = $products[$r['sku']] ?? 0;
+        if (!$product_id || ($r['customer'] !== null && !isset($users[$r['customer']]))) {
+            continue;
+        }
+        $id = $existing[$r['ref']] ?? 0;
+        if ($id) {
+            $stats['reviews_existing']++;
+        } else {
+            $id = (int) $insert([
+                'comment_post_ID'      => $product_id,
+                'comment_author'       => $r['author'],
+                'comment_author_email' => $r['email'],
+                'comment_author_IP'    => $r['ip'],
+                'comment_agent'        => $r['agent'],
+                'comment_content'      => $r['text'],
+                'comment_approved'     => $r['approved'],
+                'user_id'              => $r['customer'] !== null ? $users[$r['customer']] : 0,
+            ], ['rating' => $r['rating'], 'verified' => 1, '_lz_seed_ref' => $r['ref']], $r['ts']);
+            if (!$id) {
+                WP_CLI::warning("Değerlendirme {$r['ref']} yazılamadı.");
+                continue;
+            }
+            $stats['reviews_created']++;
+            $touched[$product_id] = true;
+        }
+
+        $reply_ref = $r['ref'] . '/yanit';
+        if ($r['reply'] && !isset($existing[$reply_ref])) {
+            $insert([
+                'comment_post_ID'      => $product_id,
+                'comment_parent'       => $id,
+                'comment_author'       => 'Yerel Market',
+                'comment_author_email' => get_option('admin_email'),
+                'comment_content'      => $r['reply']['text'],
+                'comment_approved'     => 1,
+                'user_id'              => (int) ($admin[0] ?? 0),
+            ], ['_lz_seed_ref' => $reply_ref], $r['reply']['ts']);
+            $stats['review_replies']++;
+        }
+    }
+    $progress->finish();
+    wp_defer_comment_counting(false);
+
+    // Ürünün ortalama puanı ve değerlendirme sayısı (_wc_average_rating, ...)
+    foreach (array_keys($touched) as $product_id) {
+        WC_Comments::clear_transients($product_id);
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Çalıştır
 // ---------------------------------------------------------------------------
@@ -974,12 +1185,20 @@ if ($lz_opts['dry-run']) {
         $lz_c['registered_ts'] = lzseed_iso($lz_c['registered_ts']);
     }
     unset($lz_c);
+    foreach ($lz_plan['reviews'] as &$lz_r) {
+        $lz_r['ts'] = lzseed_iso($lz_r['ts']);
+        if ($lz_r['reply']) {
+            $lz_r['reply']['ts'] = lzseed_iso($lz_r['reply']['ts']);
+        }
+    }
+    unset($lz_r);
     WP_CLI::line(wp_json_encode([
         'synthetic' => 'SENTETİK — tüm kişiler, TCKN\'ler ve adresler rastgele üretilmiştir',
         'options'   => array_diff_key($lz_opts, ['customer-pass' => 1]),
         'products'  => array_values(array_map(fn($r) => array_diff_key($r, ['_categories' => 1]), $lz_catalog)),
         'customers' => $lz_plan['customers'],
         'orders'    => $lz_plan['orders'],
+        'reviews'   => $lz_plan['reviews'],
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
     return;
 }
@@ -989,7 +1208,7 @@ add_filter('pre_wp_mail', '__return_false');
 wp_defer_term_counting(true);
 
 $lz_stats = array_fill_keys(['products_created', 'products_updated', 'images_set', 'customers_created',
-    'customers_existing', 'orders_created', 'orders_existing'], 0);
+    'customers_existing', 'orders_created', 'orders_existing', 'reviews_created', 'reviews_existing', 'review_replies'], 0);
 
 WP_CLI::log('==> Mağaza ayarları, ödeme ve teslimat');
 lzseed_apply_settings();
@@ -1009,6 +1228,9 @@ wp_defer_term_counting(false);
 WP_CLI::log('==> Sentetik müşteriler ve siparişler');
 $lz_users = lzseed_apply_customers($lz_plan['customers'], $lz_opts['customer-pass'], $lz_stats);
 lzseed_apply_orders($lz_plan, $lz_products, $lz_users, $lz_stats);
+
+WP_CLI::log('==> Ürün değerlendirmeleri');
+lzseed_apply_reviews($lz_plan, $lz_products, $lz_users, $lz_stats);
 wc_delete_product_transients();
 
 WP_CLI\Utils\format_items('table', array_map(
