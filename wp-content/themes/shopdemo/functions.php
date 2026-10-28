@@ -101,11 +101,52 @@ add_action('storefront_before_header', function () {
     <div class="shopdemo-topbar" role="note">
         <div class="col-full">
             <span class="shopdemo-topbar__item shopdemo-topbar__item--truck">750 ₺ üzeri siparişlerde ücretsiz teslimat</span>
+            <span class="shopdemo-topbar__item shopdemo-topbar__item--zone" id="shopdemo-zone" hidden
+                title="Sunucunun çalıştığı yer ve tarayıcınızdan sunucuya gidiş-dönüş süresi (birkaç ölçümün en iyisi)">
+                <span class="shopdemo-zone__name"></span> · <span class="shopdemo-zone__ms"></span>
+            </span>
             <span class="shopdemo-topbar__item shopdemo-topbar__item--demo"><?php echo esc_html($notice); ?></span>
         </div>
     </div>
     <?php
 }, 5);
+
+/**
+ * Üst banttaki konum ve gecikme: zone.php'den sunucunun zone'unu alır ve aynı
+ * isteğin gidiş-dönüş süresini ölçer. İlk istek bağlantıyı ısıtır (DNS, TLS);
+ * sonraki üç ölçümün en kısası gösterilir. Dış servise istek yok.
+ */
+add_action('wp_footer', function () {
+    ?>
+    <script>
+    (function () {
+        var el = document.getElementById('shopdemo-zone');
+        if (!el || !window.fetch || !window.performance) { return; }
+        var url = <?php echo wp_json_encode(home_url('/zone.php')); ?>;
+        function probe() {
+            var t = performance.now();
+            return fetch(url, { cache: 'no-store', credentials: 'omit' }).then(function (r) {
+                return r.json().then(function (data) { return { data: data, ms: performance.now() - t }; });
+            });
+        }
+        function show(data, ms) {
+            el.querySelector('.shopdemo-zone__name').textContent = data.label;
+            el.querySelector('.shopdemo-zone__ms').textContent = ms < 1 ? '<1 ms' : Math.round(ms) + ' ms';
+            if (data.zone) { el.title = data.zone + ' — ' + el.title; }
+            el.hidden = false;
+        }
+        probe().then(function (first) {
+            var best = Infinity, left = 3;
+            (function next() {
+                if (left-- === 0) { show(first.data, best); return; }
+                probe().then(function (r) { best = Math.min(best, r.ms); next(); },
+                             function () { show(first.data, isFinite(best) ? best : first.ms); });
+            })();
+        }).catch(function () {});
+    })();
+    </script>
+    <?php
+});
 
 /**
  * Başlıkta hesap linki: girişsiz "Giriş yap", girişli "Hesabım".

@@ -31,6 +31,11 @@ and no real payments. Nothing is sold.
   payment methods are never shown, even if enabled in wp-admin.
 - **A demo notice** ("Demo mağazadır, satış yapılmaz" — demo store, nothing is
   sold) in the site tagline, the top banner and the footer.
+- **Where it runs, measured live.** The top bar shows the zone the server
+  runs in and the round trip from your browser to it, for example
+  "İstanbul Local Zone · 3 ms" (or "Frankfurt · 40 ms" for the baseline). The
+  zone comes from the ECS task metadata; the time is measured in the browser
+  against `/zone.php`, which does not load WordPress. Nothing is hard-coded.
 - **A demo customer account** with a few orders:
   `demo.musteri@example.com` / `demo123`.
 

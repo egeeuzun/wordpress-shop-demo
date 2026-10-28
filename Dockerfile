@@ -70,6 +70,7 @@ RUN chmod +x /usr/local/bin/install-translations.sh \
 COPY wp-content/ /usr/src/wordpress/wp-content/
 COPY wp-config/wp-config.php /usr/src/wordpress/wp-config.php
 COPY docker/health.php /usr/src/wordpress/health.php
+COPY docker/zone.php /usr/src/wordpress/zone.php
 COPY docker/php-overrides.ini /usr/local/etc/php/conf.d/zz-overrides.ini
 
 # Demo mağaza seed kiti (Faz 2): katalog + WP-CLI seed betiği. Webroot dışında;
