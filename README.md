@@ -33,7 +33,8 @@ and no real payments. Nothing is sold.
   sold) in the site tagline, the top banner and the footer.
 - **Where it runs, measured live.** The top bar shows the CloudFront edge you
   reached, the zone the server runs in and the round trip, for example
-  "CloudFront IST → İstanbul Local Zone · 17 ms (edge 15 + sunucu 2)". The
+  "CloudFront IST → İstanbul Local Zone · edge 12 ms · sunucu 3 ms" (the total
+  is in the tooltip). The
   zone comes from the ECS task metadata (`/zone.php`, which CloudFront does not
   cache and which does not load WordPress), the edge from the `x-amz-cf-pop`
   header. The total is the round trip to `/zone.php`; the edge part is the

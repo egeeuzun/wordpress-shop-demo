@@ -110,7 +110,7 @@ add_action('storefront_before_header', function () {
 
 /**
  * Üst banttaki konum ve gecikme, ör. "CloudFront IST → İstanbul Local Zone ·
- * 17 ms (edge 15 + sunucu 2)". Ölçülen iki şey:
+ * edge 12 ms · sunucu 3 ms" (toplam başlıkta). Ölçülen iki şey:
  *  - zone.php: CloudFront'ta önbelleğe alınmaz, sunucuya gidip gelir (toplam).
  *    Yanıtı sunucunun zone'unu, x-amz-cf-pop başlığı bağlanılan edge'i verir.
  *  - edge-ping.txt: CloudFront önbelleğinden döner (x-cache: Hit), yalnızca
@@ -154,13 +154,16 @@ add_action('wp_footer', function () {
             if (info.zone) { tip.push('Sunucu: ' + info.zone); }
             if (info.pop) { tip.push('CloudFront edge: ' + info.pop); }
             if (isFinite(total)) {
-                text += ' \u00b7 ' + fmt(total) + ' ms';
                 tip.push('Tarayıcı \u2192 sunucu \u2192 tarayıcı: ' + fmt(total) + ' ms (en iyi ölçüm)');
                 if (isFinite(best.edge)) {
+                    // "edge 12 ms · sunucu 3 ms"; toplam başlıkta (title). Bölünmez
+                    // boşluklar: dar ekranda sayılar birimleriyle, "edge … ms" de
+                    // ayracıyla aynı satırda kalır.
                     var server = Math.max(0, total - best.edge);
-                    // Bölünmez boşluklar: dar ekranda parantez bütün olarak alt satıra iner
-                    text += ' (edge\u00a0' + fmt(best.edge) + '\u00a0+\u00a0sunucu\u00a0' + fmt(server) + ')';
+                    text += ' \u00b7 edge\u00a0' + fmt(best.edge) + '\u00a0ms\u00a0\u00b7\u00a0sunucu\u00a0' + fmt(server) + '\u00a0ms';
                     tip.push('Tarayıcı \u2194 edge: ' + fmt(best.edge) + ' ms, edge \u2194 sunucu: ' + fmt(server) + ' ms');
+                } else {
+                    text += ' \u00b7 ' + fmt(total) + '\u00a0ms';
                 }
             } else if (cached) {
                 tip.push('Yanıt CloudFront önbelleğinden geldi; süre gösterilmiyor.');
