@@ -101,10 +101,7 @@ add_action('storefront_before_header', function () {
     <div class="shopdemo-topbar" role="note">
         <div class="col-full">
             <span class="shopdemo-topbar__item shopdemo-topbar__item--truck">750 ₺ üzeri siparişlerde ücretsiz teslimat</span>
-            <span class="shopdemo-topbar__item shopdemo-topbar__item--zone" id="shopdemo-zone" hidden
-                title="Sunucunun çalıştığı yer ve tarayıcınızdan sunucuya gidiş-dönüş süresi (birkaç ölçümün en iyisi)">
-                <span class="shopdemo-zone__name"></span> · <span class="shopdemo-zone__ms"></span>
-            </span>
+            <span class="shopdemo-topbar__item shopdemo-topbar__item--zone" id="shopdemo-zone" hidden></span>
             <span class="shopdemo-topbar__item shopdemo-topbar__item--demo"><?php echo esc_html($notice); ?></span>
         </div>
     </div>
@@ -112,9 +109,15 @@ add_action('storefront_before_header', function () {
 }, 5);
 
 /**
- * Üst banttaki konum ve gecikme: zone.php'den sunucunun zone'unu alır ve aynı
- * isteğin gidiş-dönüş süresini ölçer. İlk istek bağlantıyı ısıtır (DNS, TLS);
- * sonraki üç ölçümün en kısası gösterilir. Dış servise istek yok.
+ * Üst banttaki konum ve gecikme, ör. "CloudFront IST → İstanbul Local Zone ·
+ * 17 ms (edge 15 + sunucu 2)". Ölçülen iki şey:
+ *  - zone.php: CloudFront'ta önbelleğe alınmaz, sunucuya gidip gelir (toplam).
+ *    Yanıtı sunucunun zone'unu, x-amz-cf-pop başlığı bağlanılan edge'i verir.
+ *  - edge-ping.txt: CloudFront önbelleğinden döner (x-cache: Hit), yalnızca
+ *    tarayıcı ↔ edge süresidir. Toplamdan farkı edge ↔ sunucu kısmıdır.
+ * İlk istek bağlantıyı ısıtır (DNS, TLS); sonra her birinin en kısası alınır.
+ * Önbellekten gelen bir zone.php yanıtı süre olarak gösterilmez. Dış servise
+ * istek yok.
  */
 add_action('wp_footer', function () {
     ?>
@@ -122,27 +125,68 @@ add_action('wp_footer', function () {
     (function () {
         var el = document.getElementById('shopdemo-zone');
         if (!el || !window.fetch || !window.performance) { return; }
-        var url = <?php echo wp_json_encode(home_url('/zone.php')); ?>;
-        function probe() {
+        var urls = {
+            zone: <?php echo wp_json_encode(home_url('/zone.php')); ?>,
+            edge: <?php echo wp_json_encode(get_stylesheet_directory_uri() . '/edge-ping.txt'); ?>
+        };
+        var steps = ['zone', 'zone', 'edge', 'zone', 'edge', 'zone', 'edge', 'edge'];
+        var best = { zone: Infinity, edge: Infinity }, info = null, cached = false;
+
+        function probe(url) {
             var t = performance.now();
             return fetch(url, { cache: 'no-store', credentials: 'omit' }).then(function (r) {
-                return r.json().then(function (data) { return { data: data, ms: performance.now() - t }; });
+                return r.text().then(function (body) {
+                    return {
+                        ms: performance.now() - t,
+                        body: body,
+                        pop: r.headers.get('x-amz-cf-pop') || '',
+                        hit: /^hit/i.test(r.headers.get('x-cache') || '')
+                    };
+                });
             });
         }
-        function show(data, ms) {
-            el.querySelector('.shopdemo-zone__name').textContent = data.label;
-            el.querySelector('.shopdemo-zone__ms').textContent = ms < 1 ? '<1 ms' : Math.round(ms) + ' ms';
-            if (data.zone) { el.title = data.zone + ' — ' + el.title; }
+        function fmt(ms) { return ms < 1 ? '<1' : String(Math.round(ms)); }
+        function show() {
+            if (!info) { return; }
+            var pop = info.pop.slice(0, 3), total = cached ? Infinity : best.zone;
+            var text = (pop ? 'CloudFront ' + pop + ' \u2192 ' : '') + info.label;
+            var tip = [];
+            if (info.zone) { tip.push('Sunucu: ' + info.zone); }
+            if (info.pop) { tip.push('CloudFront edge: ' + info.pop); }
+            if (isFinite(total)) {
+                text += ' \u00b7 ' + fmt(total) + ' ms';
+                tip.push('Tarayıcı \u2192 sunucu \u2192 tarayıcı: ' + fmt(total) + ' ms (en iyi ölçüm)');
+                if (isFinite(best.edge)) {
+                    var server = Math.max(0, total - best.edge);
+                    // Bölünmez boşluklar: dar ekranda parantez bütün olarak alt satıra iner
+                    text += ' (edge\u00a0' + fmt(best.edge) + '\u00a0+\u00a0sunucu\u00a0' + fmt(server) + ')';
+                    tip.push('Tarayıcı \u2194 edge: ' + fmt(best.edge) + ' ms, edge \u2194 sunucu: ' + fmt(server) + ' ms');
+                }
+            } else if (cached) {
+                tip.push('Yanıt CloudFront önbelleğinden geldi; süre gösterilmiyor.');
+            }
+            el.textContent = text;
+            el.title = tip.join('\n');
             el.hidden = false;
         }
-        probe().then(function (first) {
-            var best = Infinity, left = 3;
-            (function next() {
-                if (left-- === 0) { show(first.data, best); return; }
-                probe().then(function (r) { best = Math.min(best, r.ms); next(); },
-                             function () { show(first.data, isFinite(best) ? best : first.ms); });
-            })();
-        }).catch(function () {});
+        (function next(i) {
+            if (i === steps.length) { show(); return; }
+            var kind = steps[i];
+            probe(urls[kind]).then(function (r) {
+                if (kind === 'zone') {
+                    if (!info) {
+                        try { info = JSON.parse(r.body); } catch (e) { return; }
+                        info.pop = r.pop;
+                    } else {
+                        best.zone = Math.min(best.zone, r.ms);
+                    }
+                    cached = cached || r.hit;
+                } else if (r.hit) {
+                    best.edge = Math.min(best.edge, r.ms);
+                }
+                next(i + 1);
+            }, show);
+        })(0);
     })();
     </script>
     <?php

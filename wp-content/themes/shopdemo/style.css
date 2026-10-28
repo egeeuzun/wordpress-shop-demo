@@ -1205,6 +1205,11 @@ body.shopdemo .storefront-handheld-footer-bar ul li.cart .count {
         display: none;
     }
 
+    /* "(edge … + sunucu …)" dar ekranda alt satıra geçsin */
+    .shopdemo-topbar__item--zone {
+        white-space: normal;
+    }
+
     body.shopdemo .site-header {
         position: relative;
         top: 0 !important;

@@ -31,11 +31,15 @@ and no real payments. Nothing is sold.
   payment methods are never shown, even if enabled in wp-admin.
 - **A demo notice** ("Demo mağazadır, satış yapılmaz" — demo store, nothing is
   sold) in the site tagline, the top banner and the footer.
-- **Where it runs, measured live.** The top bar shows the zone the server
-  runs in and the round trip from your browser to it, for example
-  "İstanbul Local Zone · 3 ms" (or "Frankfurt · 40 ms" for the baseline). The
-  zone comes from the ECS task metadata; the time is measured in the browser
-  against `/zone.php`, which does not load WordPress. Nothing is hard-coded.
+- **Where it runs, measured live.** The top bar shows the CloudFront edge you
+  reached, the zone the server runs in and the round trip, for example
+  "CloudFront IST → İstanbul Local Zone · 17 ms (edge 15 + sunucu 2)". The
+  zone comes from the ECS task metadata (`/zone.php`, which CloudFront does not
+  cache and which does not load WordPress), the edge from the `x-amz-cf-pop`
+  header. The total is the round trip to `/zone.php`; the edge part is the
+  round trip to a tiny file CloudFront serves from its cache
+  (`edge-ping.txt`), and the server part is the difference. Nothing is
+  hard-coded.
 - **A demo customer account** with a few orders:
   `demo.musteri@example.com` / `demo123`.
 
