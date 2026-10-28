@@ -130,4 +130,11 @@ for dir in plugins themes uploads upgrade languages; do
     fi
 done
 
+# Otomatik kurulum + seed (AWS): Apache'yi bekletmemek için arka planda.
+# Resmi entrypoint dosyaları /var/www/html'e kopyalarken betik bekler;
+# ayrıntılar docker/auto-seed.php'de. Yalnızca web sunucusu başlarken.
+if [ "${SHOP_AUTO_SEED:-0}" = "1" ] && [ "${1:-}" = "apache2-foreground" ]; then
+    runuser -u www-data -- php /usr/local/bin/shop-auto-seed.php &
+fi
+
 exec docker-entrypoint.sh "$@"

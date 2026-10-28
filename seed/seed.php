@@ -566,11 +566,38 @@ function lzseed_apply_settings(): void
         switch_theme('shopdemo');
     }
 
-    // Kalıcı bağlantılar: option'ı yazmak yetmez, bu istekteki $wp_rewrite de güncellenmeli
+    // Kalıcı bağlantılar: option'ı yazmak yetmez, bu istekteki $wp_rewrite de
+    // güncellenmeli. Kurallar en sonda lzseed_flush_rewrite() ile yazılır.
     global $wp_rewrite;
     $wp_rewrite->set_permalink_structure('/%postname%/');
+}
+
+/**
+ * URL kurallarını yeniden yazar. set_permalink_structure() WP_Rewrite::init()
+ * ile kayıtlı endpoint'leri siler; WooCommerce'inkiler (orders, view-order,
+ * order-received...) yeniden eklenmezse kurallarda yer almaz ve "Hesabım →
+ * Siparişler" ile sipariş sonrası teşekkür sayfası 404 verir. Ana sayfa
+ * ayarı endpoint maskesini etkilediği için sayfalardan sonra çağrılır.
+ */
+function lzseed_flush_rewrite(): void
+{
+    if (isset(WC()->query)) {
+        WC()->query->add_endpoints();
+    }
     require_once ABSPATH . 'wp-admin/includes/misc.php';
     flush_rewrite_rules(true);
+
+    $orders = get_option('woocommerce_myaccount_orders_endpoint', 'orders');
+    $found  = false;
+    foreach (array_keys((array) get_option('rewrite_rules')) as $regex) {
+        if (str_contains($regex, '/' . $orders . '(/')) {
+            $found = true;
+            break;
+        }
+    }
+    if (!$found) {
+        WP_CLI::warning("URL kurallarında WooCommerce endpoint'leri yok ($orders); hesap sayfaları 404 verebilir. Elle: wp rewrite flush");
+    }
 }
 
 /** Mağaza sayfaları; checkout/cart klasik shortcode'a çevrilir (TCKN alanı klasik checkout API'siyle eklenir). */
@@ -1232,6 +1259,7 @@ lzseed_apply_orders($lz_plan, $lz_products, $lz_users, $lz_stats);
 WP_CLI::log('==> Ürün değerlendirmeleri');
 lzseed_apply_reviews($lz_plan, $lz_products, $lz_users, $lz_stats);
 wc_delete_product_transients();
+lzseed_flush_rewrite();
 
 WP_CLI\Utils\format_items('table', array_map(
     fn($k, $v) => ['metrik' => $k, 'adet' => $v],

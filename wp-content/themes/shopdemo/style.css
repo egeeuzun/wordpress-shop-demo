@@ -4,7 +4,7 @@ Theme URI: https://example.com/
 Description: Storefront tabanlı "Yerel Market" demo child teması (sentetik veri, satış yapılmaz). Modern market düzeni: üst bant, aramalı başlık, kategori çipleri, kart ürünler. Harici yazı tipi yüklemez.
 Author: Ege Uzun
 Template: storefront
-Version: 2.0.0
+Version: 2.1.0
 Text Domain: shopdemo
 */
 
@@ -178,6 +178,17 @@ body.shopdemo select:focus {
 
 .shopdemo-topbar__item--demo::before {
     background: #8fd3b0;
+}
+
+/* Sunucunun zone'u ve ölçülen gecikme (JS doldurur, ölçülene dek gizli) */
+.shopdemo-topbar__item--zone {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.shopdemo-topbar__item--zone::before {
+    background: #5be3a0;
+    box-shadow: 0 0 0 3px rgba(91, 227, 160, .25);
 }
 
 /* Üst bant aynı mesajı gösterdiği için WooCommerce'in alttaki bildirimi gizli */
@@ -1184,12 +1195,19 @@ body.shopdemo .storefront-handheld-footer-bar ul li.cart .count {
     }
 
     .shopdemo-topbar .col-full {
+        flex-wrap: wrap;
         justify-content: center;
+        row-gap: 4px;
         text-align: center;
     }
 
     .shopdemo-topbar__item--truck {
         display: none;
+    }
+
+    /* "(edge … + sunucu …)" dar ekranda alt satıra geçsin */
+    .shopdemo-topbar__item--zone {
+        white-space: normal;
     }
 
     body.shopdemo .site-header {

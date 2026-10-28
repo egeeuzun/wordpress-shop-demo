@@ -101,11 +101,99 @@ add_action('storefront_before_header', function () {
     <div class="shopdemo-topbar" role="note">
         <div class="col-full">
             <span class="shopdemo-topbar__item shopdemo-topbar__item--truck">750 ₺ üzeri siparişlerde ücretsiz teslimat</span>
+            <span class="shopdemo-topbar__item shopdemo-topbar__item--zone" id="shopdemo-zone" hidden></span>
             <span class="shopdemo-topbar__item shopdemo-topbar__item--demo"><?php echo esc_html($notice); ?></span>
         </div>
     </div>
     <?php
 }, 5);
+
+/**
+ * Üst banttaki konum ve gecikme, ör. "CloudFront IST → İstanbul Local Zone ·
+ * edge 12 ms · sunucu 3 ms" (toplam başlıkta). Ölçülen iki şey:
+ *  - zone.php: CloudFront'ta önbelleğe alınmaz, sunucuya gidip gelir (toplam).
+ *    Yanıtı sunucunun zone'unu, x-amz-cf-pop başlığı bağlanılan edge'i verir.
+ *  - edge-ping.txt: CloudFront önbelleğinden döner (x-cache: Hit), yalnızca
+ *    tarayıcı ↔ edge süresidir. Toplamdan farkı edge ↔ sunucu kısmıdır.
+ * İlk istek bağlantıyı ısıtır (DNS, TLS); sonra her birinin en kısası alınır.
+ * Önbellekten gelen bir zone.php yanıtı süre olarak gösterilmez. Dış servise
+ * istek yok.
+ */
+add_action('wp_footer', function () {
+    ?>
+    <script>
+    (function () {
+        var el = document.getElementById('shopdemo-zone');
+        if (!el || !window.fetch || !window.performance) { return; }
+        var urls = {
+            zone: <?php echo wp_json_encode(home_url('/zone.php')); ?>,
+            edge: <?php echo wp_json_encode(get_stylesheet_directory_uri() . '/edge-ping.txt'); ?>
+        };
+        var steps = ['zone', 'zone', 'edge', 'zone', 'edge', 'zone', 'edge', 'edge'];
+        var best = { zone: Infinity, edge: Infinity }, info = null, cached = false;
+
+        function probe(url) {
+            var t = performance.now();
+            return fetch(url, { cache: 'no-store', credentials: 'omit' }).then(function (r) {
+                return r.text().then(function (body) {
+                    return {
+                        ms: performance.now() - t,
+                        body: body,
+                        pop: r.headers.get('x-amz-cf-pop') || '',
+                        hit: /^hit/i.test(r.headers.get('x-cache') || '')
+                    };
+                });
+            });
+        }
+        function fmt(ms) { return ms < 1 ? '<1' : String(Math.round(ms)); }
+        function show() {
+            if (!info) { return; }
+            var pop = info.pop.slice(0, 3), total = cached ? Infinity : best.zone;
+            var text = (pop ? 'CloudFront ' + pop + ' \u2192 ' : '') + info.label;
+            var tip = [];
+            if (info.zone) { tip.push('Sunucu: ' + info.zone); }
+            if (info.pop) { tip.push('CloudFront edge: ' + info.pop); }
+            if (isFinite(total)) {
+                tip.push('Tarayıcı \u2192 sunucu \u2192 tarayıcı: ' + fmt(total) + ' ms (en iyi ölçüm)');
+                if (isFinite(best.edge)) {
+                    // "edge 12 ms · sunucu 3 ms"; toplam başlıkta (title). Bölünmez
+                    // boşluklar: dar ekranda sayılar birimleriyle, "edge … ms" de
+                    // ayracıyla aynı satırda kalır.
+                    var server = Math.max(0, total - best.edge);
+                    text += ' \u00b7 edge\u00a0' + fmt(best.edge) + '\u00a0ms\u00a0\u00b7\u00a0sunucu\u00a0' + fmt(server) + '\u00a0ms';
+                    tip.push('Tarayıcı \u2194 edge: ' + fmt(best.edge) + ' ms, edge \u2194 sunucu: ' + fmt(server) + ' ms');
+                } else {
+                    text += ' \u00b7 ' + fmt(total) + '\u00a0ms';
+                }
+            } else if (cached) {
+                tip.push('Yanıt CloudFront önbelleğinden geldi; süre gösterilmiyor.');
+            }
+            el.textContent = text;
+            el.title = tip.join('\n');
+            el.hidden = false;
+        }
+        (function next(i) {
+            if (i === steps.length) { show(); return; }
+            var kind = steps[i];
+            probe(urls[kind]).then(function (r) {
+                if (kind === 'zone') {
+                    if (!info) {
+                        try { info = JSON.parse(r.body); } catch (e) { return; }
+                        info.pop = r.pop;
+                    } else {
+                        best.zone = Math.min(best.zone, r.ms);
+                    }
+                    cached = cached || r.hit;
+                } else if (r.hit) {
+                    best.edge = Math.min(best.edge, r.ms);
+                }
+                next(i + 1);
+            }, show);
+        })(0);
+    })();
+    </script>
+    <?php
+});
 
 /**
  * Başlıkta hesap linki: girişsiz "Giriş yap", girişli "Hesabım".

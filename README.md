@@ -31,6 +31,16 @@ and no real payments. Nothing is sold.
   payment methods are never shown, even if enabled in wp-admin.
 - **A demo notice** ("Demo mağazadır, satış yapılmaz" — demo store, nothing is
   sold) in the site tagline, the top banner and the footer.
+- **Where it runs, measured live.** The top bar shows the CloudFront edge you
+  reached, the zone the server runs in and the round trip, for example
+  "CloudFront IST → İstanbul Local Zone · edge 12 ms · sunucu 3 ms" (the total
+  is in the tooltip). The
+  zone comes from the ECS task metadata (`/zone.php`, which CloudFront does not
+  cache and which does not load WordPress), the edge from the `x-amz-cf-pop`
+  header. The total is the round trip to `/zone.php`; the edge part is the
+  round trip to a tiny file CloudFront serves from its cache
+  (`edge-ping.txt`), and the server part is the difference. Nothing is
+  hard-coded.
 - **A demo customer account** with a few orders:
   `demo.musteri@example.com` / `demo123`.
 
@@ -54,6 +64,34 @@ already exist, so nothing is duplicated.
 ```
 
 ## Filling the store on AWS
+
+### Automatically (default with the Terraform repo)
+
+Set `SHOP_AUTO_SEED=1` and the container prepares the store by itself when it
+starts. It runs in the background, so Apache and the health check do not wait:
+
+1. If WordPress is not installed, it installs it in Turkish and switches on
+   WooCommerce and the `shopdemo` theme.
+2. If the seed kit has not run on this database yet, or the image has a
+   different kit than last time, it runs the seed.
+
+| Variable | Meaning |
+| --- | --- |
+| `SHOP_AUTO_SEED` | `1` = on. Off by default, so local `docker compose` is unchanged. |
+| `WORDPRESS_ADMIN_PASSWORD` | Required. Password of the admin user created on install. Pass it as an ECS secret. |
+| `WORDPRESS_ADMIN_USER` | Default `admin`. |
+| `WORDPRESS_ADMIN_EMAIL` | Default `demo@example.com`. |
+| `SHOP_SEED_ARGS` | Extra seed options, for example `orders=500 customers=200`. |
+
+Every task runs the check when it starts, but only one does the work: the
+first to take a database lock (`GET_LOCK('shop_auto_seed')`); the others skip.
+The image stores a fingerprint of the seed kit in `/usr/src/shop-seed/.version`;
+after a successful run the same value goes into the `shop_seed_version`
+option, and the next start sees nothing to do. A failed run leaves the option
+alone, so the next task start tries again. Its output is in the container log,
+lines start with `[auto-seed]`.
+
+### By hand
 
 The seed kit is built into the image at `/usr/src/shop-seed/`, so the same
 steps work in a running ECS task. Open a shell in it:
@@ -123,7 +161,7 @@ CI/CD: GitHub → CodeBuild → CodePipeline → ECR → ECS
 ├── Dockerfile               # Fargate container image
 ├── buildspec.yml            # CodeBuild specification
 ├── docker-compose.yml       # Local development setup
-├── docker/                  # Entrypoint, PHP settings, health check, drop-in patch, language packs
+├── docker/                  # Entrypoint, auto install + seed, PHP settings, health check, drop-in patch, language packs
 ├── wp-config/wp-config.php  # Env-based WordPress config
 ├── wp-content/
 │   ├── themes/shopdemo/     # Storefront child theme: modern grocery layout, system fonts only
