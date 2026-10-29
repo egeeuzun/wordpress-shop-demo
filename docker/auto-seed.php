@@ -143,6 +143,9 @@ if (shop_wp(array_merge(['eval-file', SHOP_SEED_DIR . '/seed.php'], $seed_args))
     shop_log('Seed başarısız; sonraki açılışta tekrar denenecek.');
     exit(1);
 }
+// Seed sürecinde ürün ve kategori URL kuralları eksik kalabilir (bkz.
+// lzseed_flush_rewrite); son haliyle açılan yeni bir süreçte yeniden yaz.
+shop_wp(['rewrite', 'flush']);
 if ($want !== '') {
     shop_wp(['option', 'update', 'shop_seed_version', $want]);
 }

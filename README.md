@@ -111,7 +111,13 @@ wp core install --url="$WP_HOME" --title="Yerel Market" --locale=tr_TR \
 wp plugin activate woocommerce
 wp theme activate shopdemo
 wp eval-file /usr/src/shop-seed/seed.php
+wp rewrite flush   # product and category URLs; see below
 ```
+
+On a fresh install the seed itself cannot always write the product and
+category URL rules: WordPress adds them only when the permalink structure is
+already set at start-up, and the seed sets it. The flush in a new WP-CLI
+process fixes that; the automatic install and `seed-demo.sh` do it for you.
 
 None of this needs API keys. All options, and which database tables hold the
 personal data, are in [`seed/README.md`](seed/README.md).

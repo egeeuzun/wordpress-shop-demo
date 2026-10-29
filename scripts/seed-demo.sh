@@ -53,6 +53,9 @@ wp theme activate shopdemo
 echo "==> Demo veri (seed/seed.php)"
 wp eval-file /usr/src/shop-seed/seed.php "$@"
 
+# Ürün ve kategori URL kuralları seed sürecinde eksik kalabilir; yeni süreçte yaz
+wp rewrite flush
+
 echo
 echo "Tamamlandı! 🎉"
 echo "  Mağaza:       $SITE_URL"
