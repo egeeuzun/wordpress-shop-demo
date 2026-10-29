@@ -578,6 +578,14 @@ function lzseed_apply_settings(): void
  * order-received...) yeniden eklenmezse kurallarda yer almaz ve "Hesabım →
  * Siparişler" ile sipariş sonrası teşekkür sayfası 404 verir. Ana sayfa
  * ayarı endpoint maskesini etkilediği için sayfalardan sonra çağrılır.
+ *
+ * Ürün ve kategori kuralları bu süreçte eksik kalabilir: WordPress bir post
+ * type'ın URL kurallarını yalnızca kaydedildiği anda (init) kalıcı bağlantı
+ * yapısı doluysa ekler. Taze kurulumda wp core install'un loopback denemesi
+ * başarısız olursa (ECS'te task henüz ALB'de sağlıklı değil) yapı boştur;
+ * WooCommerce urun/urun-kategori'yi kuralsız kaydeder, yapıyı burada sonradan
+ * yazmak bunu geri getirmez. Çözüm yeni bir süreçte wp rewrite flush;
+ * auto-seed.php ve seed-demo.sh seed'den sonra bunu yapar.
  */
 function lzseed_flush_rewrite(): void
 {
@@ -587,16 +595,21 @@ function lzseed_flush_rewrite(): void
     require_once ABSPATH . 'wp-admin/includes/misc.php';
     flush_rewrite_rules(true);
 
-    $orders = get_option('woocommerce_myaccount_orders_endpoint', 'orders');
-    $found  = false;
-    foreach (array_keys((array) get_option('rewrite_rules')) as $regex) {
-        if (str_contains($regex, '/' . $orders . '(/')) {
-            $found = true;
-            break;
+    $rules   = array_keys((array) get_option('rewrite_rules'));
+    $orders  = get_option('woocommerce_myaccount_orders_endpoint', 'orders');
+    $missing = [];
+    if (!array_filter($rules, fn($r) => str_contains($r, '/' . $orders . '(/'))) {
+        $missing[] = $orders;
+    }
+    $bases = wc_get_permalink_structure();
+    foreach (['product_rewrite_slug', 'category_rewrite_slug'] as $key) {
+        $base = trim(explode('%', (string) ($bases[$key] ?? ''))[0], '/');
+        if ($base !== '' && !array_filter($rules, fn($r) => str_starts_with($r, $base . '/'))) {
+            $missing[] = $base;
         }
     }
-    if (!$found) {
-        WP_CLI::warning("URL kurallarında WooCommerce endpoint'leri yok ($orders); hesap sayfaları 404 verebilir. Elle: wp rewrite flush");
+    if ($missing) {
+        WP_CLI::warning('URL kurallarında eksik: ' . implode(', ', $missing) . '; bu sayfalar 404 verir. Yeni bir süreçte: wp rewrite flush');
     }
 }
 
