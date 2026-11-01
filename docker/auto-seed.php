@@ -123,6 +123,11 @@ if (shop_wp(['core', 'is-installed']) !== 0) {
     // Mağaza sayfaları WooCommerce etkinleşirken sitenin dilinde oluşturulur
     shop_wp(['site', 'switch-language', 'tr_TR']);
 }
+// Kalıcı bağlantılar WooCommerce'ten ve seed'den önce: sonraki her süreç
+// ürün ve kategori URL kurallarını baştan kaydeder (bkz. lzseed_flush_rewrite)
+if (shop_wp_output(['option', 'get', 'permalink_structure']) === '') {
+    shop_wp(['rewrite', 'structure', '/%postname%/']);
+}
 if (shop_wp_output(['plugin', 'is-active', 'woocommerce']) === null) {
     shop_wp(['plugin', 'activate', 'woocommerce']);
 }
@@ -143,9 +148,6 @@ if (shop_wp(array_merge(['eval-file', SHOP_SEED_DIR . '/seed.php'], $seed_args))
     shop_log('Seed başarısız; sonraki açılışta tekrar denenecek.');
     exit(1);
 }
-// Seed sürecinde ürün ve kategori URL kuralları eksik kalabilir (bkz.
-// lzseed_flush_rewrite); son haliyle açılan yeni bir süreçte yeniden yaz.
-shop_wp(['rewrite', 'flush']);
 if ($want !== '') {
     shop_wp(['option', 'update', 'shop_seed_version', $want]);
 }
