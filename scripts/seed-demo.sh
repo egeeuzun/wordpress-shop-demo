@@ -46,15 +46,18 @@ fi
 echo "==> Site dili: Türkçe"
 wp site switch-language tr_TR
 
+# Kalıcı bağlantılar WooCommerce'ten önce: ürün ve kategori URL kuralları
+# yalnızca yapı zaten doluyken kaydedilir (seed.php, lzseed_flush_rewrite)
+if [ -z "$(wp option get permalink_structure)" ]; then
+    wp rewrite structure '/%postname%/'
+fi
+
 echo "==> Tema ve eklentiler"
 wp plugin activate woocommerce
 wp theme activate shopdemo
 
 echo "==> Demo veri (seed/seed.php)"
 wp eval-file /usr/src/shop-seed/seed.php "$@"
-
-# Ürün ve kategori URL kuralları seed sürecinde eksik kalabilir; yeni süreçte yaz
-wp rewrite flush
 
 echo
 echo "Tamamlandı! 🎉"

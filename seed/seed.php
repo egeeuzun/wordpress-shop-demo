@@ -584,8 +584,9 @@ function lzseed_apply_settings(): void
  * yapısı doluysa ekler. Taze kurulumda wp core install'un loopback denemesi
  * başarısız olursa (ECS'te task henüz ALB'de sağlıklı değil) yapı boştur;
  * WooCommerce urun/urun-kategori'yi kuralsız kaydeder, yapıyı burada sonradan
- * yazmak bunu geri getirmez. Çözüm yeni bir süreçte wp rewrite flush;
- * auto-seed.php ve seed-demo.sh seed'den sonra bunu yapar.
+ * yazmak bunu geri getirmez. Bu yüzden kurallar son olarak yeni bir WP-CLI
+ * sürecinde yazılır; seed nasıl çağrılırsa çağrılsın (auto-seed, seed-demo.sh,
+ * ECS Exec ile elle) aynı sonuç çıkar.
  */
 function lzseed_flush_rewrite(): void
 {
@@ -594,6 +595,14 @@ function lzseed_flush_rewrite(): void
     }
     require_once ABSPATH . 'wp-admin/includes/misc.php';
     flush_rewrite_rules(true);
+
+    $res = WP_CLI::runcommand('rewrite flush', ['launch' => true, 'return' => 'all', 'exit_error' => false]);
+    if ($res->return_code !== 0) {
+        WP_CLI::warning('wp rewrite flush (yeni süreç) başarısız: ' . trim($res->stderr));
+    }
+    // Alt sürecin yazdığını oku; bu süreçteki option önbelleği eski
+    wp_cache_delete('alloptions', 'options');
+    wp_cache_delete('rewrite_rules', 'options');
 
     $rules   = array_keys((array) get_option('rewrite_rules'));
     $orders  = get_option('woocommerce_myaccount_orders_endpoint', 'orders');
