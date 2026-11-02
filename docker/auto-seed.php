@@ -5,7 +5,8 @@
  *
  *  1. WordPress kurulu değilse Türkçe kurar, WooCommerce'i ve shopdemo
  *     temasını etkinleştirir.
- *  2. Seed kiti bu veritabanında hiç çalışmadıysa ya da imajdaki kit
+ *  2. Yönetici parolasını WORDPRESS_ADMIN_PASSWORD ile eşitler (her açılışta).
+ *  3. Seed kiti bu veritabanında hiç çalışmadıysa ya da imajdaki kit
  *     değiştiyse (/usr/src/shop-seed/.version) seed'i çalıştırır.
  *
  * Birden fazla task aynı anda açılır; yalnızca veritabanında GET_LOCK alan
@@ -14,7 +15,8 @@
  *
  * Ortam: WP_HOME, WORDPRESS_DB_*, WORDPRESS_ADMIN_PASSWORD (zorunlu),
  * WORDPRESS_ADMIN_USER (admin), WORDPRESS_ADMIN_EMAIL, SHOP_SEED_ARGS
- * (seed.php'ye ek argümanlar, örn. "orders=500").
+ * (seed.php'ye ek argümanlar, örn. "orders=500"), SHOP_SYNC_ADMIN_PASSWORD
+ * (0 = parolayı eşitleme).
  */
 
 const SHOP_WP_PATH   = '/var/www/html';
@@ -133,6 +135,29 @@ if (shop_wp_output(['plugin', 'is-active', 'woocommerce']) === null) {
 }
 if (shop_wp_output(['option', 'get', 'stylesheet']) !== 'shopdemo') {
     shop_wp(['theme', 'activate', 'shopdemo']);
+}
+
+// Yönetici parolasının kaynağı WORDPRESS_ADMIN_PASSWORD (AWS'de SSM): wp core
+// install onu yalnızca ilk kurulumda kullanır. SSM'deki değer sonradan
+// değişirse ya da veritabanı daha önce başka bir parolayla kurulduysa panele
+// girilemiyordu. Her açılışta eşitlenir; panelden değiştirilen parola bir
+// sonraki task açılışında geri alınır. Kapatmak için SHOP_SYNC_ADMIN_PASSWORD=0.
+// Parola komut satırına yazılmaz; wp süreci ortamdan okur.
+if (shop_env('SHOP_SYNC_ADMIN_PASSWORD', '1') === '1') {
+    $sync = <<<'PHP'
+$login = getenv('WORDPRESS_ADMIN_USER') ?: 'admin';
+$pass  = (string) getenv('WORDPRESS_ADMIN_PASSWORD');
+$user  = get_user_by('login', $login);
+if (!$user) {
+    echo "Yönetici '$login' bulunamadı; parola eşitlenmedi.";
+} elseif (wp_check_password($pass, $user->user_pass, $user->ID)) {
+    echo "Yönetici parolası güncel ($login).";
+} else {
+    wp_set_password($pass, $user->ID);
+    echo "Yönetici parolası WORDPRESS_ADMIN_PASSWORD ile eşitlendi ($login).";
+}
+PHP;
+    shop_log(shop_wp_output(['eval', $sync]) ?? 'Yönetici parolası eşitlenemedi.');
 }
 
 $want = trim((string) @file_get_contents(SHOP_SEED_DIR . '/.version'));
