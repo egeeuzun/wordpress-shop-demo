@@ -55,6 +55,9 @@ docker compose up -d --build
 - **Store:** http://localhost:8080
 - **Admin:** http://localhost:8080/wp-admin (`admin` / `admin123`)
 
+`admin123` is only the local default. On AWS the admin password comes from
+`WORDPRESS_ADMIN_PASSWORD` (an SSM parameter, see below).
+
 `seed-demo.sh` installs WordPress in Turkish, then fills the store. You can run it again: it skips products, customers, orders and reviews that
 already exist, so nothing is duplicated.
 
@@ -72,16 +75,29 @@ starts. It runs in the background, so Apache and the health check do not wait:
 
 1. If WordPress is not installed, it installs it in Turkish and switches on
    WooCommerce and the `shopdemo` theme.
-2. If the seed kit has not run on this database yet, or the image has a
+2. It sets the admin user's password to `WORDPRESS_ADMIN_PASSWORD`, so the
+   password in SSM always works, even if the database was installed earlier
+   with another one. A password changed in wp-admin is reset on the next task
+   start; set `SHOP_SYNC_ADMIN_PASSWORD=0` to keep it.
+3. If the seed kit has not run on this database yet, or the image has a
    different kit than last time, it runs the seed.
 
 | Variable | Meaning |
 | --- | --- |
 | `SHOP_AUTO_SEED` | `1` = on. Off by default, so local `docker compose` is unchanged. |
-| `WORDPRESS_ADMIN_PASSWORD` | Required. Password of the admin user created on install. Pass it as an ECS secret. |
+| `WORDPRESS_ADMIN_PASSWORD` | Required. Password of the admin user; set on install and on every start. Pass it as an ECS secret. |
 | `WORDPRESS_ADMIN_USER` | Default `admin`. |
 | `WORDPRESS_ADMIN_EMAIL` | Default `demo@example.com`. |
 | `SHOP_SEED_ARGS` | Extra seed options, for example `orders=500 customers=200`. |
+| `SHOP_SYNC_ADMIN_PASSWORD` | Default `1`. `0` = set the admin password only on install. |
+
+With the Terraform repo the password is random unless you set
+`wp_admin_password`. Read it with:
+
+```bash
+aws ssm get-parameter --with-decryption --query Parameter.Value --output text \
+  --name "$(terraform output -raw admin_password_ssm_name)"
+```
 
 Every task runs the check when it starts, but only one does the work: the
 first to take a database lock (`GET_LOCK('shop_auto_seed')`); the others skip.
