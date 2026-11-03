@@ -1,5 +1,11 @@
 # WordPress Shop Demo — Yerel Market
 
+**English** · [Türkçe](README.tr.md)
+
+> **New here?** The step-by-step [running guide](docs/running-guide.md) shows
+> how to run the store on your computer with Docker, or on AWS, with
+> troubleshooting for both.
+
 A WooCommerce grocery store, **Yerel Market**, packaged as a Docker image for
 AWS ECS. It is the demo app for a project that moves a high-availability
 WordPress setup from Frankfurt to the AWS Istanbul Local Zone, and then checks
@@ -54,6 +60,9 @@ docker compose up -d --build
 
 - **Store:** http://localhost:8080
 - **Admin:** http://localhost:8080/wp-admin (`admin` / `admin123`)
+
+Prerequisites, everyday commands and troubleshooting are in the
+[running guide](docs/running-guide.md).
 
 `admin123` is only the local default. On AWS the admin password comes from
 `WORDPRESS_ADMIN_PASSWORD` (an SSM parameter, see below).
@@ -181,7 +190,6 @@ CI/CD: GitHub → CodeBuild → CodePipeline → ECR → ECS
 
 ```text
 ├── Dockerfile               # Fargate container image
-├── buildspec.yml            # CodeBuild specification
 ├── docker-compose.yml       # Local development setup
 ├── docker/                  # Entrypoint, auto install + seed, PHP settings, health check, drop-in patch, language packs
 ├── wp-config/wp-config.php  # Env-based WordPress config
@@ -192,6 +200,7 @@ CI/CD: GitHub → CodeBuild → CodePipeline → ECR → ECS
 │   ├── products.csv         # 86 grocery products (WooCommerce CSV importer format)
 │   └── seed.php             # WP-CLI seeder: store setup, catalog, synthetic customers, orders & reviews
 ├── scripts/seed-demo.sh     # Local setup: core install (Turkish) + seed.php
+├── docs/                    # Running guide (English + Turkish)
 └── ecs/
     ├── taskdef.example.json      # ECS Task Definition template
     ├── s3-media-policy.example.json  # Task role policy for the media bucket
@@ -201,7 +210,7 @@ CI/CD: GitHub → CodeBuild → CodePipeline → ECR → ECS
 ## AWS CI/CD Setup
 
 1. **ECR:** Create repository `wordpress-shop-demo`.
-2. **CodeBuild:** Connect repository, enable *Privileged mode*, and grant ECR push permissions.
+2. **CodeBuild:** Connect repository, enable *Privileged mode*, and grant ECR push permissions. The build spec is not in this repo; the Terraform repo defines it inline (`modules/cicd`).
 3. **Secrets Manager:** Create secrets for DB password and WordPress salts.
 4. **Task Definition:** Fill in placeholders in `ecs/taskdef.example.json`. Keep container name as `wordpress`.
 5. **CodePipeline:** Pipeline flow: GitHub → CodeBuild → ECS (using `imagedefinitions.json`).

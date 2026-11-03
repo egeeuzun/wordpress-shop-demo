@@ -1,5 +1,7 @@
 # Seed kit — Yerel Market demo data
 
+**English** · [Türkçe](README.tr.md)
+
 This kit fills the store with fake grocery data: products, customers, orders
 and product reviews. The personal data it creates (names, addresses, phone
 numbers, national IDs, reviewers' e-mails and IP addresses) is what the
