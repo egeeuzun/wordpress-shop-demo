@@ -131,7 +131,7 @@ iki kez oluşmaz. Seçenekler:
 ```
 
 Tüm seçenekler (`seed=`, `no-images`, `reset-stock`, `customer-pass=`, …)
-[`seed/README.md`](../seed/README.md#options) dosyasında.
+[`seed/README.tr.md`](../seed/README.tr.md#seçenekler) dosyasında.
 
 ### A6. Açın
 

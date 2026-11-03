@@ -21,7 +21,7 @@ yok. Hiçbir şey satılmaz.
   SKU'su (`LZ-0001`…), fiyatı, stoğu, ağırlığı ve birimi var. Bazıları
   indirimde. Her ürünün repoda (`seed/photos/`) saklanan, serbest lisanslı
   kendi fotoğrafı var (Wikimedia Commons); bkz.
-  [`seed/README.md`](seed/README.md#product-photos).
+  [`seed/README.tr.md`](seed/README.tr.md#ürün-fotoğrafları).
 - **Son 90 güne yayılmış 150 müşteri ve yaklaşık 330 sipariş.** Kayıtlı her
   müşterinin en az bir siparişi var. İsimler, İstanbul adresleri, `+90 5xx`
   telefon numaraları ve `@example.com` e-postaları rastgele üretilir.
@@ -146,7 +146,7 @@ yazar. Yine de eksik bulursa bir uyarı basar (`URL kurallarında eksik: …`);
 `wp rewrite flush` elle düzeltir.
 
 Bunların hiçbiri API anahtarı gerektirmez. Tüm seçenekler ve kişisel verinin
-hangi veritabanı tablolarında tutulduğu [`seed/README.md`](seed/README.md)
+hangi veritabanı tablolarında tutulduğu [`seed/README.tr.md`](seed/README.tr.md)
 dosyasında.
 
 ## Dil
